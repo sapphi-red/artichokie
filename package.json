@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/sapphi-red/artichokie#readme",
   "devDependencies": {
-    "@types/node": "^14.14.14",
+    "@types/node": "^18.18.8",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
