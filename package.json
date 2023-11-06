@@ -1,7 +1,7 @@
 {
-  "name": "okie",
-  "version": "1.0.1",
-  "description": "Dead simple worker thread pool",
+  "name": "artichokie",
+  "version": "0.1.0",
+  "description": "Mutual callable worker thread pool with fallback.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -16,15 +16,20 @@
     "test": "tsc -p . && jest",
     "prepublishOnly": "tsc -p ."
   },
-  "author": "Evan You",
+  "author": "sapphi-red (https://github.com/sapphi-red)",
+  "contributors": ["Evan You"],
   "license": "MIT",
   "engines": {
     "node": ">=12.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yyx990803/okie.git"
+    "url": "git+https://github.com/sapphi-red/artichokie.git"
   },
+  "bugs": {
+    "url": "https://github.com/sapphi-red/artichokie/issues"
+  },
+  "homepage": "https://github.com/sapphi-red/artichokie#readme",
   "jest": {
     "testEnvironment": "node"
   },
