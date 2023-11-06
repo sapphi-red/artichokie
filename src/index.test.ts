@@ -1,4 +1,5 @@
-const { Worker } = require('../dist/index')
+import { Worker } from './index'
+import { test, expect } from 'vitest'
 
 test('should work', async () => {
   const worker = new Worker(async ({ n }) => {

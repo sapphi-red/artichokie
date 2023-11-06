@@ -11,7 +11,7 @@
     "dev": "tsup --watch",
     "build": "tsup",
     "type-check": "tsc --noEmit",
-    "test": "pnpm run build && jest"
+    "test": "vitest"
   },
   "author": "sapphi-red (https://github.com/sapphi-red)",
   "contributors": ["Evan You"],
@@ -27,14 +27,11 @@
     "url": "https://github.com/sapphi-red/artichokie/issues"
   },
   "homepage": "https://github.com/sapphi-red/artichokie#readme",
-  "jest": {
-    "testEnvironment": "node"
-  },
   "devDependencies": {
     "@types/node": "^14.14.14",
-    "jest": "^26.6.3",
     "tsup": "^7.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.6"
   },
   "packageManager": "pnpm@8.10.2"
 }
