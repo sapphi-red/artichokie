@@ -1,5 +1,6 @@
-import os from 'os'
-import { Worker as _Worker } from 'worker_threads'
+import { createRequire } from 'node:module'
+import os from 'node:os'
+import { Worker as _Worker } from 'node:worker_threads'
 
 interface NodeWorker extends _Worker {
   currentResolve: ((value: any) => void) | null
@@ -8,20 +9,23 @@ interface NodeWorker extends _Worker {
 
 export interface Options {
   max?: number
+  parentFunctions?: Record<string, (...args: any[]) => Promise<any>>
 }
 
 export class Worker<Args extends any[], Ret = any> {
   private code: string
+  private parentFunctions: Record<string, (...args: any[]) => Promise<any>>
   private max: number
   private pool: NodeWorker[]
   private idlePool: NodeWorker[]
   private queue: [(worker: NodeWorker) => void, (err: Error) => void][]
 
   constructor(
-    fn: (...args: Args) => Promise<Ret> | Ret,
+    fn: () => (...args: Args) => Promise<Ret> | Ret,
     options: Options = {}
   ) {
-    this.code = genWorkerCode(fn)
+    this.code = genWorkerCode(fn, options.parentFunctions ?? {})
+    this.parentFunctions = options.parentFunctions ?? {}
     this.max = options.max || Math.max(1, os.cpus().length - 1)
     this.pool = []
     this.idlePool = []
@@ -33,11 +37,11 @@ export class Worker<Args extends any[], Ret = any> {
     return new Promise<Ret>((resolve, reject) => {
       worker.currentResolve = resolve
       worker.currentReject = reject
-      worker.postMessage(args)
+      worker.postMessage({ type: 'run', args })
     })
   }
 
-  stop() {
+  stop(): void {
     this.pool.forEach((w) => w.unref())
     this.queue.forEach(([_, reject]) =>
       reject(
@@ -59,10 +63,37 @@ export class Worker<Args extends any[], Ret = any> {
     if (this.pool.length < this.max) {
       const worker = new _Worker(this.code, { eval: true }) as NodeWorker
 
-      worker.on('message', (res) => {
-        worker.currentResolve && worker.currentResolve(res)
-        worker.currentResolve = null
-        this._assignDoneWorker(worker)
+      worker.on('message', async (args) => {
+        if (args.type === 'run') {
+          if ('result' in args) {
+            worker.currentResolve && worker.currentResolve(args.result)
+            worker.currentResolve = null
+            this._assignDoneWorker(worker)
+          } else {
+            worker.currentReject && worker.currentReject(args.error)
+            worker.currentReject = null
+          }
+        } else if (args.type === 'parentFunction') {
+          const parentFunctions = this.parentFunctions
+          if (!(args.name in parentFunctions)) {
+            throw new Error(
+              `Parent function ${JSON.stringify(
+                args.name
+              )} was not passed to options but was called.`
+            )
+          }
+
+          try {
+            const result = await this.parentFunctions[args.name]!(...args.args)
+            worker.postMessage({ type: 'parentFunction', id: args.id, result })
+          } catch (e) {
+            worker.postMessage({
+              type: 'parentFunction',
+              id: args.id,
+              error: e
+            })
+          }
+        }
       })
 
       worker.on('error', (err) => {
@@ -108,15 +139,113 @@ export class Worker<Args extends any[], Ret = any> {
   }
 }
 
-function genWorkerCode(fn: Function) {
+function genWorkerCode(fn: Function, parentFunctions: Record<string, unknown>) {
   return `
-const doWork = ${fn.toString()}
-
+let id = 0
+const parentFunctionResolvers = new Map()
+const parentFunctionCall = (key) => async (...args) => {
+  id++
+  let resolve, reject
+  const promise = new Promise((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  parentFunctionResolvers.set(id, { resolve, reject })
+  parentPort.postMessage({ type: 'parentFunction', id, name: key, args })
+  return await promise
+}
+const doWork = (() => {
+  ${Object.keys(parentFunctions)
+    .map((key) => `const ${key} = parentFunctionCall(${JSON.stringify(key)});`)
+    .join('\n')}
+  return (${fn.toString()})()
+})()
 const { parentPort } = require('worker_threads')
-
 parentPort.on('message', async (args) => {
-  const res = await doWork(...args)
-  parentPort.postMessage(res)
+  if (args.type === 'run') {
+    try {
+      const res = await doWork(...args.args)
+      parentPort.postMessage({ type: 'run', result: res })
+    } catch (e) {
+      parentPort.postMessage({ type: 'run', error: e })
+    }
+  } else if (args.type === 'parentFunction') {
+    const id = args.id
+    if (parentFunctionResolvers.has(id)) {
+      const { resolve, reject } = parentFunctionResolvers.get(id)
+      parentFunctionResolvers.delete(id)
+      if ('result' in args) {
+        resolve(args.result)
+      } else {
+        reject(args.error)
+      }
+    }
+  }
 })
   `
+}
+
+class FakeWorker<Args extends any[], Ret = any> {
+  private fn: (...args: Args) => Promise<Ret>
+
+  constructor(
+    fn: () => (...args: Args) => Promise<Ret> | Ret,
+    options: Options = {}
+  ) {
+    const argsAndCode = genFakeWorkerArgsAndCode(
+      fn,
+      options.parentFunctions ?? {}
+    )
+    const require = createRequire(import.meta.url)
+    this.fn = new Function(...argsAndCode)(require, options.parentFunctions)
+  }
+
+  async run(...args: Args): Promise<Ret> {
+    return this.fn(...args)
+  }
+
+  stop(): void {
+    /* no-op */
+  }
+}
+
+function genFakeWorkerArgsAndCode(
+  fn: Function,
+  parentFunctions: Record<string, unknown>
+) {
+  return [
+    'require',
+    'parentFunctions',
+    `
+${Object.keys(parentFunctions)
+  .map((key) => `const ${key} = parentFunctions[${JSON.stringify(key)}];`)
+  .join('\n')}
+return (${fn.toString()})()
+  `
+  ]
+}
+
+export class WorkerWithFallback<Args extends any[], Ret = any> {
+  private _realWorker: Worker<Args, Ret>
+  private _fakeWorker: FakeWorker<Args, Ret>
+  private _shouldUseFake: (...args: Args) => boolean
+
+  constructor(
+    fn: () => (...args: Args) => Promise<Ret> | Ret,
+    options: Options & { shouldUseFake: (...args: Args) => boolean }
+  ) {
+    this._realWorker = new Worker(fn, options)
+    this._fakeWorker = new FakeWorker(fn, options)
+    this._shouldUseFake = options.shouldUseFake
+  }
+
+  async run(...args: Args): Promise<Ret> {
+    const useFake = this._shouldUseFake(...args)
+    return this[useFake ? '_fakeWorker' : '_realWorker'].run(...args)
+  }
+
+  stop(): void {
+    this._realWorker.stop()
+    this._fakeWorker.stop()
+  }
 }
