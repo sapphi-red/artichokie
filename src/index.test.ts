@@ -4,9 +4,12 @@ import { test, expect } from 'vitest'
 test('should work', async () => {
   const worker = new Worker(async ({ n }) => {
     return new Promise((r) => {
-      setTimeout(() => {
-        r(n + 1)
-      }, Math.floor(Math.random() * 100))
+      setTimeout(
+        () => {
+          r(n + 1)
+        },
+        Math.floor(Math.random() * 100)
+      )
     })
   })
 

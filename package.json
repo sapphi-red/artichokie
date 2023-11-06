@@ -10,11 +10,14 @@
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
+    "format": "prettier --cache --write .",
     "type-check": "tsc --noEmit",
     "test": "vitest"
   },
   "author": "sapphi-red (https://github.com/sapphi-red)",
-  "contributors": ["Evan You"],
+  "contributors": [
+    "Evan You"
+  ],
   "license": "MIT",
   "engines": {
     "node": "^18.0.0 || >=20.0.0"
@@ -29,6 +32,7 @@
   "homepage": "https://github.com/sapphi-red/artichokie#readme",
   "devDependencies": {
     "@types/node": "^18.18.8",
+    "prettier": "^3.0.3",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
