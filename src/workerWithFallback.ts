@@ -2,7 +2,7 @@ import { Worker } from './realWorker'
 import { FakeWorker } from './fakeWorker'
 import type { Options } from './options'
 
-export class WorkerWithFallback<Args extends any[], Ret = any> {
+export class WorkerWithFallback<Args extends unknown[], Ret = unknown> {
   /** @internal */
   private _realWorker: Worker<Args, Ret>
   /** @internal */

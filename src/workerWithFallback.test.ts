@@ -3,10 +3,10 @@ import { test, expect } from 'vitest'
 
 test('should work', async () => {
   const infSymbol = Symbol('inf')
-  const isInf = async (n: number | Symbol) => n === infSymbol
+  const isInf = async (n: number | symbol) => n === infSymbol
 
   const worker = new WorkerWithFallback(
-    () => async (n: number | Symbol) => {
+    () => async (n: number | symbol) => {
       return await isInf(n) ? Infinity : 0
     },
     {
@@ -28,10 +28,10 @@ test('should work', async () => {
 
 test('should error', async () => {
   const infSymbol = Symbol('inf')
-  const isInf = async (n: number | Symbol) => n === infSymbol
+  const isInf = async (n: number | symbol) => n === infSymbol
 
   const worker = new WorkerWithFallback(
-    () => async (n: number | Symbol) => {
+    () => async (n: number | symbol) => {
       return await isInf(n) ? Infinity : 0
     },
     {

@@ -1,7 +1,7 @@
-import type { Options } from './options'
+import type { Options, ParentFunctions } from './options'
 import { createRequire } from 'node:module'
 
-export class FakeWorker<Args extends any[], Ret = any> {
+export class FakeWorker<Args extends unknown[], Ret = unknown> {
   /** @internal */
   private _fn: (...args: Args) => Promise<Ret>
 
@@ -35,8 +35,9 @@ export class FakeWorker<Args extends any[], Ret = any> {
 }
 
 function genFakeWorkerArgsAndCode(
-  fn: Function,
-  parentFunctions: Record<string, unknown>
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  fn: () => Function,
+  parentFunctions: ParentFunctions
 ) {
   return [
     'require',

@@ -52,6 +52,7 @@ test('max option', async () => {
 
 test('require works', async () => {
   const worker = new Worker(() => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const qs: typeof querystring = require('node:querystring')
     return async () => {
       return qs.stringify({ foo: 'bar' })

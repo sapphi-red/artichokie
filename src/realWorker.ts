@@ -1,26 +1,25 @@
-
 import os from 'node:os'
 import { Worker as _Worker } from 'node:worker_threads'
-import type { Options } from './options'
+import type { Options, ParentFunctions } from './options'
 
-interface NodeWorker extends _Worker {
-  currentResolve: ((value: any) => void) | null
+interface NodeWorker<Ret> extends _Worker {
+  currentResolve: ((value: Ret | PromiseLike<Ret>) => void) | null
   currentReject: ((err: Error) => void) | null
 }
 
-export class Worker<Args extends any[], Ret = any> {
+export class Worker<Args extends unknown[], Ret = unknown> {
   /** @internal */
   private _code: string
   /** @internal */
-  private _parentFunctions: Record<string, (...args: any[]) => Promise<any>>
+  private _parentFunctions: ParentFunctions
   /** @internal */
   private _max: number
   /** @internal */
-  private _pool: NodeWorker[]
+  private _pool: NodeWorker<Ret>[]
   /** @internal */
-  private _idlePool: NodeWorker[]
+  private _idlePool: NodeWorker<Ret>[]
   /** @internal */
-  private _queue: [(worker: NodeWorker) => void, (err: Error) => void][]
+  private _queue: [(worker: NodeWorker<Ret>) => void, (err: Error) => void][]
 
   constructor(
     fn: () => (...args: Args) => Promise<Ret> | Ret,
@@ -50,7 +49,7 @@ export class Worker<Args extends any[], Ret = any> {
 
   stop(): void {
     this._pool.forEach((w) => w.unref())
-    this._queue.forEach(([_, reject]) =>
+    this._queue.forEach(([, reject]) =>
       reject(
         new Error('Main worker pool stopped before a worker was available.')
       )
@@ -61,7 +60,7 @@ export class Worker<Args extends any[], Ret = any> {
   }
 
   /** @internal */
-  private async _getAvailableWorker(): Promise<NodeWorker> {
+  private async _getAvailableWorker(): Promise<NodeWorker<Ret>> {
     // has idle one?
     if (this._idlePool.length) {
       return this._idlePool.shift()!
@@ -69,7 +68,7 @@ export class Worker<Args extends any[], Ret = any> {
 
     // can spawn more?
     if (this._pool.length < this._max) {
-      const worker = new _Worker(this._code, { eval: true }) as NodeWorker
+      const worker = new _Worker(this._code, { eval: true }) as NodeWorker<Ret>
 
       worker.on('message', async (args) => {
         if (args.type === 'run') {
@@ -78,7 +77,8 @@ export class Worker<Args extends any[], Ret = any> {
             worker.currentResolve = null
           } else {
             if (args.error instanceof ReferenceError) {
-              args.error.message += '. Maybe you forgot to pass the function to parentFunction?'
+              args.error.message +=
+                '. Maybe you forgot to pass the function to parentFunction?'
             }
             worker.currentReject && worker.currentReject(args.error)
             worker.currentReject = null
@@ -119,9 +119,9 @@ export class Worker<Args extends any[], Ret = any> {
     }
 
     // no one is available, we have to wait
-    let resolve: (worker: NodeWorker) => void
-    let reject: (err: Error) => any
-    const onWorkerAvailablePromise = new Promise<NodeWorker>((r, rj) => {
+    let resolve: (worker: NodeWorker<Ret>) => void
+    let reject: (err: Error) => unknown
+    const onWorkerAvailablePromise = new Promise<NodeWorker<Ret>>((r, rj) => {
       resolve = r
       reject = rj
     })
@@ -130,7 +130,7 @@ export class Worker<Args extends any[], Ret = any> {
   }
 
   /** @internal */
-  private _assignDoneWorker(worker: NodeWorker) {
+  private _assignDoneWorker(worker: NodeWorker<Ret>) {
     // someone's waiting already?
     if (this._queue.length) {
       const [resolve] = this._queue.shift()!
@@ -142,7 +142,11 @@ export class Worker<Args extends any[], Ret = any> {
   }
 }
 
-function genWorkerCode(fn: Function, parentFunctions: Record<string, unknown>) {
+function genWorkerCode(
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  fn: () => Function,
+  parentFunctions: ParentFunctions
+) {
   return `
 let id = 0
 const parentFunctionResolvers = new Map()
