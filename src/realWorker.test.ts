@@ -1,16 +1,18 @@
-import { Worker } from './index'
+import { Worker } from './realWorker'
 import { test, expect } from 'vitest'
 
 test('should work', async () => {
-  const worker = new Worker(async ({ n }) => {
-    return new Promise((r) => {
-      setTimeout(
-        () => {
-          r(n + 1)
-        },
-        Math.floor(Math.random() * 100)
-      )
-    })
+  const worker = new Worker(() => {
+    return async ({ n }) => {
+      return new Promise((r) => {
+        setTimeout(
+          () => {
+            r(n + 1)
+          },
+          Math.floor(Math.random() * 100)
+        )
+      })
+    }
   })
 
   const results = await Promise.all([
