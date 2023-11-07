@@ -1,8 +1,8 @@
-import { Worker } from './realWorker'
+import { FakeWorker } from './fakeWorker'
 import { test, expect } from 'vitest'
 
 test('should work', async () => {
-  const worker = new Worker(() => {
+  const worker = new FakeWorker(() => {
     return async ({ n }) => {
       return new Promise((r) => {
         setTimeout(
@@ -31,26 +31,8 @@ test('should work', async () => {
   expect(results).toStrictEqual([2, 3, 4, 5, 6, 7, 8, 9, 10])
 })
 
-test('max option', async () => {
-  const worker = new Worker(
-    () => async () => {
-      await new Promise((resolve) => setTimeout(resolve, 50))
-      return 1
-    },
-    { max: 1 }
-  )
-
-  const start = Date.now()
-  const results = await Promise.all([worker.run(), worker.run()])
-  const elapsed = Date.now() - start
-
-  worker.stop()
-  expect(results).toStrictEqual([1, 1])
-  expect(elapsed).toBeGreaterThan(75)
-})
-
 test('require works', async () => {
-  const worker = new Worker(() => {
+  const worker = new FakeWorker(() => {
     const qs = require('node:querystring')
     return async () => {
       return qs.stringify({ foo: 'bar' })
@@ -65,7 +47,7 @@ test('require works', async () => {
 
 test('parentFunction', async () => {
   const parent = async () => 1
-  const worker = new Worker(
+  const worker = new FakeWorker(
     () => async () => {
       return (await parent()) + 1
     },
@@ -82,7 +64,7 @@ test('parentFunction', async () => {
 
 test('missing parentFunction', async () => {
   let missing: () => Promise<number>
-  const worker = new Worker(() => async () => {
+  const worker = new FakeWorker(() => async () => {
     return (await missing()) + 1
   })
 
@@ -92,20 +74,3 @@ test('missing parentFunction', async () => {
   )
   worker.stop()
 })
-
-test(
-  'call done for rejected call',
-  async () => {
-    const worker = new Worker(
-      () => async () => {
-        throw new Error('throw')
-      },
-      { max: 1 }
-    )
-
-    await expect(() => worker.run()).rejects.toThrow()
-    await expect(() => worker.run()).rejects.toThrow()
-    worker.stop()
-  },
-  { timeout: 300 }
-)

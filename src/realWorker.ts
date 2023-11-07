@@ -64,21 +64,15 @@ export class Worker<Args extends any[], Ret = any> {
           if ('result' in args) {
             worker.currentResolve && worker.currentResolve(args.result)
             worker.currentResolve = null
-            this._assignDoneWorker(worker)
           } else {
+            if (args.error instanceof ReferenceError) {
+              args.error.message += '. Maybe you forgot to pass the function to parentFunction?'
+            }
             worker.currentReject && worker.currentReject(args.error)
             worker.currentReject = null
           }
+          this._assignDoneWorker(worker)
         } else if (args.type === 'parentFunction') {
-          const parentFunctions = this.parentFunctions
-          if (!(args.name in parentFunctions)) {
-            throw new Error(
-              `Parent function ${JSON.stringify(
-                args.name
-              )} was not passed to options but was called.`
-            )
-          }
-
           try {
             const result = await this.parentFunctions[args.name]!(...args.args)
             worker.postMessage({ type: 'parentFunction', id: args.id, result })

@@ -1,4 +1,4 @@
-import type { Options } from "./options"
+import type { Options } from './options'
 import { createRequire } from 'node:module'
 
 export class FakeWorker<Args extends any[], Ret = any> {
@@ -17,7 +17,15 @@ export class FakeWorker<Args extends any[], Ret = any> {
   }
 
   async run(...args: Args): Promise<Ret> {
-    return this.fn(...args)
+    try {
+      return await this.fn(...args)
+    } catch (err) {
+      if (err instanceof ReferenceError) {
+        err.message +=
+          '. Maybe you forgot to pass the function to parentFunction?'
+      }
+      throw err
+    }
   }
 
   stop(): void {
