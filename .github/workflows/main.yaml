@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+
+jobs:
+  lint:
+    name: run lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-repo
+      - run: pnpm run lint --max-warnings=0
+  format:
+    name: run format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-repo
+      - run: pnpm prettier --check .
+  build:
+    name: run build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-repo
+      - run: pnpm run build
+  type-check:
+    name: run type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-repo
+      - run: pnpm run type-check
+  test:
+    name: run test
+    strategy:
+      matrix:
+        node_version: [18.x, 20.x]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-repo
+        with:
+          node-version: ${{ matrix.node_version }}
+      - run: pnpm run test
