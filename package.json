@@ -27,6 +27,10 @@
     "type": "git",
     "url": "git+https://github.com/sapphi-red/artichokie.git"
   },
+  "keywords": [
+    "worker threads",
+    "thread pool"
+  ],
   "bugs": {
     "url": "https://github.com/sapphi-red/artichokie/issues"
   },
