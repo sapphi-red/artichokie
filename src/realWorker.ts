@@ -147,27 +147,45 @@ function genWorkerCode(
   fn: () => Function,
   parentFunctions: ParentFunctions
 ) {
+  const createParentFunctionCaller = (parentPort: MessagePort) => {
+    let id = 0
+    const resolvers = new Map()
+    const call = (key: string) => async (...args: unknown[]) => {
+      id++
+      let resolve, reject
+      const promise = new Promise((res, rej) => {
+        resolve = res
+        reject = rej
+      })
+      resolvers.set(id, { resolve, reject })
+      parentPort.postMessage({ type: 'parentFunction', id, name: key, args })
+      return await promise
+    }
+    const receive = (id: number, args: { result: unknown } | { error: unknown }) => {
+      if (resolvers.has(id)) {
+        const { resolve, reject } = resolvers.get(id)
+        resolvers.delete(id)
+        if ('result' in args) {
+          resolve(args.result)
+        } else {
+          reject(args.error)
+        }
+      }
+    }
+    return { call, receive }
+  }
+
   return `
-let id = 0
-const parentFunctionResolvers = new Map()
-const parentFunctionCall = (key) => async (...args) => {
-  id++
-  let resolve, reject
-  const promise = new Promise((res, rej) => {
-    resolve = res
-    reject = rej
-  })
-  parentFunctionResolvers.set(id, { resolve, reject })
-  parentPort.postMessage({ type: 'parentFunction', id, name: key, args })
-  return await promise
-}
+const { parentPort } = require('worker_threads')
+const parentFunctionCaller = (${createParentFunctionCaller.toString()})(parentPort)
+
 const doWork = (() => {
   ${Object.keys(parentFunctions)
-    .map((key) => `const ${key} = parentFunctionCall(${JSON.stringify(key)});`)
+    .map((key) => `const ${key} = parentFunctionCaller.call(${JSON.stringify(key)});`)
     .join('\n')}
   return (${fn.toString()})()
 })()
-const { parentPort } = require('worker_threads')
+
 parentPort.on('message', async (args) => {
   if (args.type === 'run') {
     try {
@@ -177,16 +195,7 @@ parentPort.on('message', async (args) => {
       parentPort.postMessage({ type: 'run', error: e })
     }
   } else if (args.type === 'parentFunction') {
-    const id = args.id
-    if (parentFunctionResolvers.has(id)) {
-      const { resolve, reject } = parentFunctionResolvers.get(id)
-      parentFunctionResolvers.delete(id)
-      if ('result' in args) {
-        resolve(args.result)
-      } else {
-        reject(args.error)
-      }
-    }
+    parentFunctionCaller.receive(args.id, args)
   }
 })
   `
