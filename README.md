@@ -1,5 +1,7 @@
 # artichokie
 
+[![npm version](https://badge.fury.io/js/artichokie.svg)](https://badge.fury.io/js/artichokie) ![CI](https://github.com/sapphi-red/artichokie/workflows/CI/badge.svg) [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+
 > Okie dokie artichokie
 
 Mutual callable worker thread pool with fallback. Based on [okie](https://github.com/yyx990803/okie).
