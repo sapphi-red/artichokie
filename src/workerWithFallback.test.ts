@@ -7,7 +7,7 @@ test('should work', async () => {
 
   const worker = new WorkerWithFallback(
     () => async (n: number | symbol) => {
-      return await isInf(n) ? Infinity : 0
+      return (await isInf(n)) ? Infinity : 0
     },
     {
       parentFunctions: { isInf },
@@ -17,10 +17,7 @@ test('should work', async () => {
     }
   )
 
-  const results = await Promise.all([
-    worker.run(1),
-    worker.run(infSymbol)
-  ])
+  const results = await Promise.all([worker.run(1), worker.run(infSymbol)])
 
   worker.stop()
   expect(results).toStrictEqual([0, Infinity])
@@ -32,11 +29,13 @@ test('should error', async () => {
 
   const worker = new WorkerWithFallback(
     () => async (n: number | symbol) => {
-      return await isInf(n) ? Infinity : 0
+      return (await isInf(n)) ? Infinity : 0
     },
     {
       parentFunctions: { isInf },
-      shouldUseFake() { return false }
+      shouldUseFake() {
+        return false
+      }
     }
   )
 

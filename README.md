@@ -11,6 +11,7 @@ Mutual callable worker thread pool with fallback. Based on [okie](https://github
 - falling back to run the code in the main thread
 
 ## Examples
+
 ```js
 const parent = async () => 1
 const worker = new Worker(

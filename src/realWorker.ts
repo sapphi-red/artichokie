@@ -150,18 +150,23 @@ function genWorkerCode(
   const createParentFunctionCaller = (parentPort: MessagePort) => {
     let id = 0
     const resolvers = new Map()
-    const call = (key: string) => async (...args: unknown[]) => {
-      id++
-      let resolve, reject
-      const promise = new Promise((res, rej) => {
-        resolve = res
-        reject = rej
-      })
-      resolvers.set(id, { resolve, reject })
-      parentPort.postMessage({ type: 'parentFunction', id, name: key, args })
-      return await promise
-    }
-    const receive = (id: number, args: { result: unknown } | { error: unknown }) => {
+    const call =
+      (key: string) =>
+      async (...args: unknown[]) => {
+        id++
+        let resolve, reject
+        const promise = new Promise((res, rej) => {
+          resolve = res
+          reject = rej
+        })
+        resolvers.set(id, { resolve, reject })
+        parentPort.postMessage({ type: 'parentFunction', id, name: key, args })
+        return await promise
+      }
+    const receive = (
+      id: number,
+      args: { result: unknown } | { error: unknown }
+    ) => {
       if (resolvers.has(id)) {
         const { resolve, reject } = resolvers.get(id)
         resolvers.delete(id)
@@ -181,7 +186,10 @@ const parentFunctionCaller = (${createParentFunctionCaller.toString()})(parentPo
 
 const doWork = (() => {
   ${Object.keys(parentFunctions)
-    .map((key) => `const ${key} = parentFunctionCaller.call(${JSON.stringify(key)});`)
+    .map(
+      (key) =>
+        `const ${key} = parentFunctionCaller.call(${JSON.stringify(key)});`
+    )
     .join('\n')}
   return (${fn.toString()})()
 })()
