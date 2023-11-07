@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 
 export class FakeWorker<Args extends any[], Ret = any> {
   /** @internal */
-  private fn: (...args: Args) => Promise<Ret>
+  private _fn: (...args: Args) => Promise<Ret>
 
   constructor(
     fn: () => (...args: Args) => Promise<Ret> | Ret,
@@ -14,12 +14,12 @@ export class FakeWorker<Args extends any[], Ret = any> {
       options.parentFunctions ?? {}
     )
     const require = createRequire(import.meta.url)
-    this.fn = new Function(...argsAndCode)(require, options.parentFunctions)
+    this._fn = new Function(...argsAndCode)(require, options.parentFunctions)
   }
 
   async run(...args: Args): Promise<Ret> {
     try {
-      return await this.fn(...args)
+      return await this._fn(...args)
     } catch (err) {
       if (err instanceof ReferenceError) {
         err.message +=

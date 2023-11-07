@@ -10,33 +10,33 @@ interface NodeWorker extends _Worker {
 
 export class Worker<Args extends any[], Ret = any> {
   /** @internal */
-  private code: string
+  private _code: string
   /** @internal */
-  private parentFunctions: Record<string, (...args: any[]) => Promise<any>>
+  private _parentFunctions: Record<string, (...args: any[]) => Promise<any>>
   /** @internal */
-  private max: number
+  private _max: number
   /** @internal */
-  private pool: NodeWorker[]
+  private _pool: NodeWorker[]
   /** @internal */
-  private idlePool: NodeWorker[]
+  private _idlePool: NodeWorker[]
   /** @internal */
-  private queue: [(worker: NodeWorker) => void, (err: Error) => void][]
+  private _queue: [(worker: NodeWorker) => void, (err: Error) => void][]
 
   constructor(
     fn: () => (...args: Args) => Promise<Ret> | Ret,
     options: Options = {}
   ) {
-    this.code = genWorkerCode(fn, options.parentFunctions ?? {})
-    this.parentFunctions = options.parentFunctions ?? {}
+    this._code = genWorkerCode(fn, options.parentFunctions ?? {})
+    this._parentFunctions = options.parentFunctions ?? {}
     const defaultMax = Math.max(
       1,
       // os.availableParallelism is available from Node.js 18.14.0
       (os.availableParallelism?.() ?? os.cpus().length) - 1
     )
-    this.max = options.max || defaultMax
-    this.pool = []
-    this.idlePool = []
-    this.queue = []
+    this._max = options.max || defaultMax
+    this._pool = []
+    this._idlePool = []
+    this._queue = []
   }
 
   async run(...args: Args): Promise<Ret> {
@@ -49,27 +49,27 @@ export class Worker<Args extends any[], Ret = any> {
   }
 
   stop(): void {
-    this.pool.forEach((w) => w.unref())
-    this.queue.forEach(([_, reject]) =>
+    this._pool.forEach((w) => w.unref())
+    this._queue.forEach(([_, reject]) =>
       reject(
         new Error('Main worker pool stopped before a worker was available.')
       )
     )
-    this.pool = []
-    this.idlePool = []
-    this.queue = []
+    this._pool = []
+    this._idlePool = []
+    this._queue = []
   }
 
   /** @internal */
   private async _getAvailableWorker(): Promise<NodeWorker> {
     // has idle one?
-    if (this.idlePool.length) {
-      return this.idlePool.shift()!
+    if (this._idlePool.length) {
+      return this._idlePool.shift()!
     }
 
     // can spawn more?
-    if (this.pool.length < this.max) {
-      const worker = new _Worker(this.code, { eval: true }) as NodeWorker
+    if (this._pool.length < this._max) {
+      const worker = new _Worker(this._code, { eval: true }) as NodeWorker
 
       worker.on('message', async (args) => {
         if (args.type === 'run') {
@@ -86,7 +86,7 @@ export class Worker<Args extends any[], Ret = any> {
           this._assignDoneWorker(worker)
         } else if (args.type === 'parentFunction') {
           try {
-            const result = await this.parentFunctions[args.name]!(...args.args)
+            const result = await this._parentFunctions[args.name]!(...args.args)
             worker.postMessage({ type: 'parentFunction', id: args.id, result })
           } catch (e) {
             worker.postMessage({
@@ -104,8 +104,8 @@ export class Worker<Args extends any[], Ret = any> {
       })
 
       worker.on('exit', (code) => {
-        const i = this.pool.indexOf(worker)
-        if (i > -1) this.pool.splice(i, 1)
+        const i = this._pool.indexOf(worker)
+        if (i > -1) this._pool.splice(i, 1)
         if (code !== 0 && worker.currentReject) {
           worker.currentReject(
             new Error(`Worker stopped with non-0 exit code ${code}`)
@@ -114,7 +114,7 @@ export class Worker<Args extends any[], Ret = any> {
         }
       })
 
-      this.pool.push(worker)
+      this._pool.push(worker)
       return worker
     }
 
@@ -125,20 +125,20 @@ export class Worker<Args extends any[], Ret = any> {
       resolve = r
       reject = rj
     })
-    this.queue.push([resolve!, reject!])
+    this._queue.push([resolve!, reject!])
     return onWorkerAvailablePromise
   }
 
   /** @internal */
   private _assignDoneWorker(worker: NodeWorker) {
     // someone's waiting already?
-    if (this.queue.length) {
-      const [resolve] = this.queue.shift()!
+    if (this._queue.length) {
+      const [resolve] = this._queue.shift()!
       resolve(worker)
       return
     }
     // take a rest.
-    this.idlePool.push(worker)
+    this._idlePool.push(worker)
   }
 }
 
