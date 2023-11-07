@@ -3,8 +3,11 @@ import { FakeWorker } from './fakeWorker'
 import type { Options } from './options'
 
 export class WorkerWithFallback<Args extends any[], Ret = any> {
+  /** @internal */
   private _realWorker: Worker<Args, Ret>
+  /** @internal */
   private _fakeWorker: FakeWorker<Args, Ret>
+  /** @internal */
   private _shouldUseFake: (...args: Args) => boolean
 
   constructor(

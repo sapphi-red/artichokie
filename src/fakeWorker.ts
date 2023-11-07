@@ -2,6 +2,7 @@ import type { Options } from './options'
 import { createRequire } from 'node:module'
 
 export class FakeWorker<Args extends any[], Ret = any> {
+  /** @internal */
   private fn: (...args: Args) => Promise<Ret>
 
   constructor(

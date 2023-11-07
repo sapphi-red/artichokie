@@ -12,6 +12,7 @@
     "verbatimModuleSyntax": true,
     "declaration": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "stripInternal": true
   }
 }

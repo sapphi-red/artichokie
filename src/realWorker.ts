@@ -9,11 +9,17 @@ interface NodeWorker extends _Worker {
 }
 
 export class Worker<Args extends any[], Ret = any> {
+  /** @internal */
   private code: string
+  /** @internal */
   private parentFunctions: Record<string, (...args: any[]) => Promise<any>>
+  /** @internal */
   private max: number
+  /** @internal */
   private pool: NodeWorker[]
+  /** @internal */
   private idlePool: NodeWorker[]
+  /** @internal */
   private queue: [(worker: NodeWorker) => void, (err: Error) => void][]
 
   constructor(
@@ -54,6 +60,7 @@ export class Worker<Args extends any[], Ret = any> {
     this.queue = []
   }
 
+  /** @internal */
   private async _getAvailableWorker(): Promise<NodeWorker> {
     // has idle one?
     if (this.idlePool.length) {
@@ -122,6 +129,7 @@ export class Worker<Args extends any[], Ret = any> {
     return onWorkerAvailablePromise
   }
 
+  /** @internal */
   private _assignDoneWorker(worker: NodeWorker) {
     // someone's waiting already?
     if (this.queue.length) {
