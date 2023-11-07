@@ -1,5 +1,6 @@
 import { Worker } from './realWorker'
 import { test, expect } from 'vitest'
+import type querystring from 'node:querystring'
 
 test('should work', async () => {
   const worker = new Worker(() => {
@@ -51,7 +52,7 @@ test('max option', async () => {
 
 test('require works', async () => {
   const worker = new Worker(() => {
-    const qs = require('node:querystring')
+    const qs: typeof querystring = require('node:querystring')
     return async () => {
       return qs.stringify({ foo: 'bar' })
     }
