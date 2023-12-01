@@ -4,6 +4,8 @@ import type { Options } from './options'
 
 export class WorkerWithFallback<Args extends unknown[], Ret = unknown> {
   /** @internal */
+  private _disableReal: boolean
+  /** @internal */
   private _realWorker: Worker<Args, Ret>
   /** @internal */
   private _fakeWorker: FakeWorker<Args, Ret>
@@ -14,13 +16,14 @@ export class WorkerWithFallback<Args extends unknown[], Ret = unknown> {
     fn: () => (...args: Args) => Promise<Ret> | Ret,
     options: Options & { shouldUseFake: (...args: Args) => boolean }
   ) {
+    this._disableReal = options.max !== undefined && options.max <= 0
     this._realWorker = new Worker(fn, options)
     this._fakeWorker = new FakeWorker(fn, options)
     this._shouldUseFake = options.shouldUseFake
   }
 
   async run(...args: Args): Promise<Ret> {
-    const useFake = this._shouldUseFake(...args)
+    const useFake = this._disableReal || this._shouldUseFake(...args)
     return this[useFake ? '_fakeWorker' : '_realWorker'].run(...args)
   }
 

@@ -42,3 +42,24 @@ test('should error', async () => {
   await expect(() => worker.run(infSymbol)).rejects.toThrow()
   worker.stop()
 })
+
+test('should use fake if max=0', async () => {
+  const infSymbol = Symbol('inf')
+  const isInf = async (n: number | symbol) => n === infSymbol
+
+  const worker = new WorkerWithFallback(
+    () => async (n: number | symbol) => {
+      return (await isInf(n)) ? Infinity : 0
+    },
+    {
+      parentFunctions: { isInf },
+      shouldUseFake() { return false },
+      max: 0
+    }
+  )
+
+  const result = await worker.run(infSymbol)
+
+  worker.stop()
+  expect(result).toStrictEqual(Infinity)
+})
