@@ -53,7 +53,9 @@ test('should use fake if max=0', async () => {
     },
     {
       parentFunctions: { isInf },
-      shouldUseFake() { return false },
+      shouldUseFake() {
+        return false
+      },
       max: 0
     }
   )
