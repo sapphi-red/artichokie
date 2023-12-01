@@ -1,6 +1,6 @@
 {
   "name": "artichokie",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Mutual callable worker thread pool with fallback.",
   "type": "module",
   "exports": "./dist/index.js",
