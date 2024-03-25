@@ -6,8 +6,8 @@ settings:
 
 devDependencies:
   '@types/node':
-    specifier: ^18.18.8
-    version: 18.18.8
+    specifier: ^20.11.30
+    version: 20.11.30
   '@typescript-eslint/eslint-plugin':
     specifier: ^7.3.1
     version: 7.3.1(@typescript-eslint/parser@7.3.1)(eslint@8.53.0)(typescript@5.2.2)
@@ -376,6 +376,12 @@ packages:
 
   /@types/node@18.18.8:
     resolution: {integrity: sha512-OLGBaaK5V3VRBS1bAkMVP2/W9B+H8meUfl866OrMNQqt7wDgdpWPp5o6gmIc9pB+lIQHSq4ZL8ypeH1vPxcPaQ==}
+    dependencies:
+      undici-types: 5.26.5
+    dev: true
+
+  /@types/node@20.11.30:
+    resolution: {integrity: sha512-dHM6ZxwlmuZaRmUPfv1p+KrdD1Dci04FbdEm/9wEMouFqxYoFl5aMkt0VMAUtYRQDyYvD41WJLukhq/ha3YuTw==}
     dependencies:
       undici-types: 5.26.5
     dev: true
