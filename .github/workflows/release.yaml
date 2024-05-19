@@ -8,12 +8,15 @@ on:
 jobs:
   release:
     name: release
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-repo
       - run: pnpm run build
       - name: deploy
-        run: pnpm publish --no-git-checks
+        run: pnpm publish --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
