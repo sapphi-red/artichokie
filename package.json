@@ -36,7 +36,7 @@
   },
   "homepage": "https://github.com/sapphi-red/artichokie#readme",
   "devDependencies": {
-    "@types/node": "^20.11.30",
+    "@types/node": "^22.0.2",
     "@typescript-eslint/eslint-plugin": "^7.3.1",
     "@typescript-eslint/parser": "^7.3.1",
     "eslint": "^8.53.0",
