@@ -73,14 +73,14 @@ export class Worker<Args extends unknown[], Ret = unknown> {
       worker.on('message', async (args) => {
         if (args.type === 'run') {
           if ('result' in args) {
-            worker.currentResolve && worker.currentResolve(args.result)
+            worker.currentResolve?.(args.result)
             worker.currentResolve = null
           } else {
             if (args.error instanceof ReferenceError) {
               args.error.message +=
                 '. Maybe you forgot to pass the function to parentFunction?'
             }
-            worker.currentReject && worker.currentReject(args.error)
+            worker.currentReject?.(args.error)
             worker.currentReject = null
           }
           this._assignDoneWorker(worker)
@@ -99,7 +99,7 @@ export class Worker<Args extends unknown[], Ret = unknown> {
       })
 
       worker.on('error', (err) => {
-        worker.currentReject && worker.currentReject(err)
+        worker.currentReject?.(err)
         worker.currentReject = null
       })
 
@@ -143,7 +143,7 @@ export class Worker<Args extends unknown[], Ret = unknown> {
 }
 
 function genWorkerCode(
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   fn: () => Function,
   parentFunctions: ParentFunctions
 ) {

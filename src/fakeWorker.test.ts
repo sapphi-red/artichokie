@@ -34,7 +34,7 @@ test('should work', async () => {
 
 test('require works', async () => {
   const worker = new FakeWorker(() => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const qs: typeof querystring = require('node:querystring')
     return async () => {
       return qs.stringify({ foo: 'bar' })

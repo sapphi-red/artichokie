@@ -35,7 +35,7 @@ export class FakeWorker<Args extends unknown[], Ret = unknown> {
 }
 
 function genFakeWorkerArgsAndCode(
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   fn: () => Function,
   parentFunctions: ParentFunctions
 ) {
