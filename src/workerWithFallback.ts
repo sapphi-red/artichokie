@@ -2,6 +2,15 @@ import { Worker } from './realWorker'
 import { FakeWorker } from './fakeWorker'
 import type { Options } from './options'
 
+type ExtendedOptions = Options & {
+  /**
+   * Whether to use a worker or to fallback to the main thread
+   *
+   * @default `() => false` (never fallback to the main thread)
+   */
+  shouldUseFake: (...args: unknown[]) => boolean
+}
+
 export class WorkerWithFallback<Args extends unknown[], Ret = unknown> {
   /** @internal */
   private _disableReal: boolean
@@ -14,7 +23,7 @@ export class WorkerWithFallback<Args extends unknown[], Ret = unknown> {
 
   constructor(
     fn: () => (...args: Args) => Promise<Ret> | Ret,
-    options: Options & { shouldUseFake: (...args: Args) => boolean }
+    options: ExtendedOptions
   ) {
     this._disableReal = options.max !== undefined && options.max <= 0
     this._realWorker = new Worker(fn, options)
