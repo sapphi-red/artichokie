@@ -4,6 +4,7 @@
   "description": "Mutual callable worker thread pool with fallback.",
   "type": "module",
   "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
