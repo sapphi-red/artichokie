@@ -36,15 +36,15 @@
   },
   "homepage": "https://github.com/sapphi-red/artichokie#readme",
   "devDependencies": {
-    "@types/node": "^20.17.5",
-    "@vitest/eslint-plugin": "^1.1.7",
-    "eslint": "^9.14.0",
+    "@types/node": "^20.17.9",
+    "@vitest/eslint-plugin": "^1.1.13",
+    "eslint": "^9.16.0",
     "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.2.3",
+    "prettier": "^3.4.1",
     "tsup": "^8.3.5",
-    "typescript": "^5.6.3",
-    "typescript-eslint": "^8.12.2",
-    "vitest": "^2.1.4"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.16.0",
+    "vitest": "^2.1.6"
   },
   "packageManager": "pnpm@8.10.2"
 }
