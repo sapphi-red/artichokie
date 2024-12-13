@@ -1,25 +1,38 @@
 import type { Options, ParentFunctions } from './options'
 import { createRequire } from 'node:module'
+import { AsyncFunction, viteSsrDynamicImport, type MaybePromise } from './utils'
+
+const importRe = /\bimport\s*\(/
+const internalImportName = '__artichokie_local_import__'
 
 export class FakeWorker<Args extends unknown[], Ret = unknown> {
   /** @internal */
-  private _fn: (...args: Args) => Promise<Ret>
+  private _fn: Promise<(...args: Args) => Promise<Ret>>
 
   constructor(
-    fn: () => (...args: Args) => Promise<Ret> | Ret,
+    fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>,
     options: Options = {}
   ) {
+    const declareRequire = options.type !== 'module'
     const argsAndCode = genFakeWorkerArgsAndCode(
       fn,
+      declareRequire,
       options.parentFunctions ?? {}
     )
-    const require = createRequire(import.meta.url)
-    this._fn = new Function(...argsAndCode)(require, options.parentFunctions)
+    const localImport = (specifier: string) => import(specifier)
+    const args = [
+      ...(declareRequire ? [createRequire(import.meta.url)] : []),
+      localImport,
+      options.parentFunctions
+    ]
+    this._fn = new AsyncFunction(...argsAndCode)(...args)
   }
 
   async run(...args: Args): Promise<Ret> {
     try {
-      return await this._fn(...args)
+      return await (
+        await this._fn
+      )(...args)
     } catch (err) {
       if (err instanceof ReferenceError) {
         err.message +=
@@ -36,17 +49,27 @@ export class FakeWorker<Args extends unknown[], Ret = unknown> {
 
 function genFakeWorkerArgsAndCode(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  fn: () => Function,
+  fn: () => MaybePromise<Function>,
+  declareRequire: boolean,
   parentFunctions: ParentFunctions
 ) {
+  const fnString = fn
+    .toString()
+    // replace `import` with `__artichokie_local_import__`
+    // to make the resolve base directory consistent with `require`
+    .replace(importRe, `${internalImportName}(`)
+    // also replace `__vite_ssr_dynamic_import__` for vitest compatibility
+    .replaceAll(viteSsrDynamicImport, internalImportName)
+
   return [
-    'require',
+    ...(declareRequire ? ['require'] : []),
+    internalImportName,
     'parentFunctions',
     `
 ${Object.keys(parentFunctions)
   .map((key) => `const ${key} = parentFunctions[${JSON.stringify(key)}];`)
   .join('\n')}
-return (${fn.toString()})()
+return await (${fnString})()
   `
   ]
 }

@@ -6,6 +6,12 @@ export type ParentFunctions = Record<
 
 export interface Options {
   /**
+   * Whether the passed code should be treated as a module or a commonjs script
+   *
+   * @default 'classic'
+   */
+  type?: 'module' | 'classic'
+  /**
    * Max number of workers that can be spawned at the same time
    */
   max?: number
