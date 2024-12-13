@@ -83,7 +83,7 @@ test('parentFunction', async () => {
 })
 
 test('missing parentFunction', async () => {
-  let missing: () => Promise<number>
+  let missing!: () => Promise<number>
   const worker = new Worker(() => async () => {
     return (await missing()) + 1
   })
