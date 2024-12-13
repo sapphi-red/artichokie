@@ -22,7 +22,7 @@ const worker = new Worker(
     return (await parent()) + syncParent() + 1
   },
   {
-    parentFunctions: { parent }
+    parentFunctions: { parent, syncParent }
   }
 )
 
