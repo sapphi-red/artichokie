@@ -1,6 +1,7 @@
 import os from 'node:os'
 import { Worker as _Worker } from 'node:worker_threads'
 import type { Options, ParentFunctions } from './options'
+import { codeToDataUrl, viteSsrDynamicImport, type MaybePromise } from './utils'
 
 interface NodeWorker<Ret> extends _Worker {
   currentResolve: ((value: Ret | PromiseLike<Ret>) => void) | null
@@ -8,6 +9,8 @@ interface NodeWorker<Ret> extends _Worker {
 }
 
 export class Worker<Args extends unknown[], Ret = unknown> {
+  /** @internal */
+  private _isModule: boolean
   /** @internal */
   private _code: string
   /** @internal */
@@ -22,10 +25,15 @@ export class Worker<Args extends unknown[], Ret = unknown> {
   private _queue: [(worker: NodeWorker<Ret>) => void, (err: Error) => void][]
 
   constructor(
-    fn: () => (...args: Args) => Promise<Ret> | Ret,
+    fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>,
     options: Options = {}
   ) {
-    this._code = genWorkerCode(fn, options.parentFunctions ?? {})
+    this._isModule = options.type === 'module'
+    this._code = genWorkerCode(
+      fn,
+      this._isModule,
+      options.parentFunctions ?? {}
+    )
     this._parentFunctions = options.parentFunctions ?? {}
     const defaultMax = Math.max(
       1,
@@ -68,7 +76,11 @@ export class Worker<Args extends unknown[], Ret = unknown> {
 
     // can spawn more?
     if (this._pool.length < this._max) {
-      const worker = new _Worker(this._code, { eval: true }) as NodeWorker<Ret>
+      const worker = (
+        this._isModule
+          ? new _Worker(new URL(codeToDataUrl(this._code)))
+          : new _Worker(this._code, { eval: true })
+      ) as NodeWorker<Ret>
 
       worker.on('message', async (args) => {
         if (args.type === 'run') {
@@ -144,7 +156,8 @@ export class Worker<Args extends unknown[], Ret = unknown> {
 
 function genWorkerCode(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  fn: () => Function,
+  fn: () => MaybePromise<Function>,
+  isModule: boolean,
   parentFunctions: ParentFunctions
 ) {
   const createParentFunctionCaller = (parentPort: MessagePort) => {
@@ -180,21 +193,29 @@ function genWorkerCode(
     return { call, receive }
   }
 
+  const fnString = fn
+    .toString()
+    // replace `__vite_ssr_dynamic_import__` for vitest compatibility
+    .replaceAll(viteSsrDynamicImport, 'import')
+
   return `
-const { parentPort } = require('worker_threads')
+${isModule ? "import { parentPort } from 'worker_threads'" : "const { parentPort } = require('worker_threads')"}
 const parentFunctionCaller = (${createParentFunctionCaller.toString()})(parentPort)
 
-const doWork = (() => {
+const doWorkPromise = (async () => {
   ${Object.keys(parentFunctions)
     .map(
       (key) =>
         `const ${key} = parentFunctionCaller.call(${JSON.stringify(key)});`
     )
     .join('\n')}
-  return (${fn.toString()})()
+  return await (${fnString})()
 })()
+let doWork
 
 parentPort.on('message', async (args) => {
+  doWork ||= await doWorkPromise
+
   if (args.type === 'run') {
     try {
       const res = await doWork(...args.args)
