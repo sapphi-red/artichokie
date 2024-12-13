@@ -1,6 +1,7 @@
 import { Worker } from './realWorker'
 import { FakeWorker } from './fakeWorker'
 import type { Options } from './options'
+import type { MaybePromise } from './utils'
 
 type ExtendedOptions = Options & {
   /**
@@ -22,7 +23,7 @@ export class WorkerWithFallback<Args extends unknown[], Ret = unknown> {
   private _shouldUseFake: (...args: Args) => boolean
 
   constructor(
-    fn: () => (...args: Args) => Promise<Ret> | Ret,
+    fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>,
     options: ExtendedOptions
   ) {
     this._disableReal = options.max !== undefined && options.max <= 0
