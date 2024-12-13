@@ -195,7 +195,7 @@ function genWorkerCode(
 
   const fnString = fn
     .toString()
-    // also replace `__vite_ssr_dynamic_import__` for vitest compatibility
+    // replace `__vite_ssr_dynamic_import__` for vitest compatibility
     .replaceAll(viteSsrDynamicImport, 'import')
 
   return `
