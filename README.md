@@ -16,9 +16,10 @@ Mutual callable worker thread pool with fallback. Based on [okie](https://github
 
 ```js
 const parent = async () => 1
+const syncParent = () => 2
 const worker = new Worker(
   () => async () => {
-    return (await parent()) + 1
+    return (await parent()) + syncParent() + 1
   },
   {
     parentFunctions: { parent }
@@ -26,7 +27,7 @@ const worker = new Worker(
 )
 
 const result = await worker.run()
-console.log(result) // 2
+console.log(result) // 4
 
 worker.stop()
 ```

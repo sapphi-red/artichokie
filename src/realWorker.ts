@@ -1,5 +1,11 @@
 import os from 'node:os'
-import { Worker as _Worker } from 'node:worker_threads'
+import {
+  Worker as _Worker,
+  type WorkerOptions as _WorkerOptions,
+  MessageChannel,
+  type MessagePort,
+  type receiveMessageOnPort
+} from 'node:worker_threads'
 import type { Options, ParentFunctions } from './options'
 import { codeToDataUrl, viteSsrDynamicImport, type MaybePromise } from './utils'
 
@@ -51,7 +57,7 @@ export class Worker<Args extends unknown[], Ret = unknown> {
     return new Promise<Ret>((resolve, reject) => {
       worker.currentResolve = resolve
       worker.currentReject = reject
-      worker.postMessage({ type: 'run', args })
+      worker.postMessage({ args })
     })
   }
 
@@ -68,6 +74,35 @@ export class Worker<Args extends unknown[], Ret = unknown> {
   }
 
   /** @internal */
+  private _createWorker(
+    parentFunctionSyncMessagePort: MessagePort,
+    parentFunctionAsyncMessagePort: MessagePort,
+    lockState: Int32Array<SharedArrayBuffer>
+  ): NodeWorker<Ret> {
+    const options: _WorkerOptions = {
+      workerData: [
+        parentFunctionSyncMessagePort,
+        parentFunctionAsyncMessagePort,
+        lockState
+      ],
+      transferList: [
+        parentFunctionSyncMessagePort,
+        parentFunctionAsyncMessagePort
+      ]
+    }
+    if (this._isModule) {
+      return new _Worker(
+        new URL(codeToDataUrl(this._code)),
+        options
+      ) as NodeWorker<Ret>
+    }
+    return new _Worker(this._code, {
+      ...options,
+      eval: true
+    }) as NodeWorker<Ret>
+  }
+
+  /** @internal */
   private async _getAvailableWorker(): Promise<NodeWorker<Ret>> {
     // has idle one?
     if (this._idlePool.length) {
@@ -76,43 +111,34 @@ export class Worker<Args extends unknown[], Ret = unknown> {
 
     // can spawn more?
     if (this._pool.length < this._max) {
-      const worker = (
-        this._isModule
-          ? new _Worker(new URL(codeToDataUrl(this._code)))
-          : new _Worker(this._code, { eval: true })
-      ) as NodeWorker<Ret>
+      const parentFunctionResponder = createParentFunctionResponder(
+        this._parentFunctions
+      )
+      const worker = this._createWorker(
+        parentFunctionResponder.workerPorts.sync,
+        parentFunctionResponder.workerPorts.async,
+        parentFunctionResponder.lockState
+      )
 
       worker.on('message', async (args) => {
-        if (args.type === 'run') {
-          if ('result' in args) {
-            worker.currentResolve?.(args.result)
-            worker.currentResolve = null
-          } else {
-            if (args.error instanceof ReferenceError) {
-              args.error.message +=
-                '. Maybe you forgot to pass the function to parentFunction?'
-            }
-            worker.currentReject?.(args.error)
-            worker.currentReject = null
+        if ('result' in args) {
+          worker.currentResolve?.(args.result)
+          worker.currentResolve = null
+        } else {
+          if (args.error instanceof ReferenceError) {
+            args.error.message +=
+              '. Maybe you forgot to pass the function to parentFunction?'
           }
-          this._assignDoneWorker(worker)
-        } else if (args.type === 'parentFunction') {
-          try {
-            const result = await this._parentFunctions[args.name]!(...args.args)
-            worker.postMessage({ type: 'parentFunction', id: args.id, result })
-          } catch (e) {
-            worker.postMessage({
-              type: 'parentFunction',
-              id: args.id,
-              error: e
-            })
-          }
+          worker.currentReject?.(args.error)
+          worker.currentReject = null
         }
+        this._assignDoneWorker(worker)
       })
 
       worker.on('error', (err) => {
         worker.currentReject?.(err)
         worker.currentReject = null
+        parentFunctionResponder.close()
       })
 
       worker.on('exit', (code) => {
@@ -123,6 +149,7 @@ export class Worker<Args extends unknown[], Ret = unknown> {
             new Error(`Worker stopped with non-0 exit code ${code}`)
           )
           worker.currentReject = null
+          parentFunctionResponder.close()
         }
       })
 
@@ -154,32 +181,131 @@ export class Worker<Args extends unknown[], Ret = unknown> {
   }
 }
 
+function createParentFunctionResponder(parentFunctions: ParentFunctions) {
+  const lockState = new Int32Array(new SharedArrayBuffer(4))
+  const unlock = () => {
+    Atomics.store(lockState, 0, 0)
+    Atomics.notify(lockState, 0)
+  }
+
+  const parentFunctionSyncMessageChannel = new MessageChannel()
+  const parentFunctionAsyncMessageChannel = new MessageChannel()
+  const parentFunctionSyncMessagePort = parentFunctionSyncMessageChannel.port1
+  const parentFunctionAsyncMessagePort = parentFunctionAsyncMessageChannel.port1
+
+  const syncResponse = (data: unknown) => {
+    parentFunctionSyncMessagePort.postMessage(data)
+    unlock()
+  }
+
+  parentFunctionSyncMessagePort.on('message', async (args) => {
+    let syncResult: unknown
+    try {
+      syncResult = parentFunctions[args.name]!(...args.args)
+    } catch (error) {
+      syncResponse({ id: args.id, error })
+      return
+    }
+
+    // if the result is not thenable (async)
+    if (
+      !(
+        typeof syncResult === 'object' &&
+        syncResult !== null &&
+        'then' in syncResult &&
+        typeof syncResult.then === 'function'
+      )
+    ) {
+      syncResponse({
+        id: args.id,
+        result: syncResult
+      })
+      return
+    }
+
+    syncResponse({
+      id: args.id,
+      isAsync: true
+    })
+
+    try {
+      const result = await syncResult
+      parentFunctionAsyncMessagePort.postMessage({ id: args.id, result })
+    } catch (error) {
+      parentFunctionAsyncMessagePort.postMessage({ id: args.id, error })
+    }
+  })
+
+  return {
+    close: () => {
+      parentFunctionSyncMessagePort.close()
+      parentFunctionAsyncMessagePort.close()
+    },
+    lockState,
+    workerPorts: {
+      sync: parentFunctionSyncMessageChannel.port2,
+      async: parentFunctionAsyncMessageChannel.port2
+    }
+  }
+}
+
 function genWorkerCode(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   fn: () => MaybePromise<Function>,
   isModule: boolean,
   parentFunctions: ParentFunctions
 ) {
-  const createParentFunctionCaller = (parentPort: MessagePort) => {
+  const createLock = (lockState: Int32Array<SharedArrayBuffer>) => {
+    return {
+      lock: () => {
+        Atomics.store(lockState, 0, 1)
+      },
+      waitUnlock: () => {
+        const status = Atomics.wait(lockState, 0, 1, 10 * 1000)
+        if (status === 'timed-out') {
+          throw new Error(status)
+        }
+      }
+    }
+  }
+
+  const createParentFunctionRequester = (
+    syncPort: MessagePort,
+    asyncPort: MessagePort,
+    receive: typeof receiveMessageOnPort,
+    lock: ReturnType<typeof createLock>
+  ) => {
     let id = 0
     const resolvers = new Map()
     const call =
       (key: string) =>
-      async (...args: unknown[]) => {
+      (...args: unknown[]) => {
         id++
-        let resolve, reject
-        const promise = new Promise((res, rej) => {
-          resolve = res
-          reject = rej
-        })
-        resolvers.set(id, { resolve, reject })
-        parentPort.postMessage({ type: 'parentFunction', id, name: key, args })
-        return await promise
+
+        lock.lock()
+        syncPort.postMessage({ id, name: key, args })
+        lock.waitUnlock()
+        const resArgs = receive(syncPort)!.message
+
+        if (resArgs.isAsync) {
+          let resolve, reject
+          const promise = new Promise((res, rej) => {
+            resolve = res
+            reject = rej
+          })
+          resolvers.set(id, { resolve, reject })
+          return promise
+        }
+
+        if ('error' in resArgs) {
+          throw resArgs.error
+        } else {
+          return resArgs.result
+        }
       }
-    const receive = (
-      id: number,
-      args: { result: unknown } | { error: unknown }
-    ) => {
+
+    asyncPort.on('message', (args) => {
+      const id = args.id
       if (resolvers.has(id)) {
         const { resolve, reject } = resolvers.get(id)
         resolvers.delete(id)
@@ -189,8 +315,9 @@ function genWorkerCode(
           reject(args.error)
         }
       }
-    }
-    return { call, receive }
+    })
+
+    return { call }
   }
 
   const fnString = fn
@@ -199,14 +326,21 @@ function genWorkerCode(
     .replaceAll(viteSsrDynamicImport, 'import')
 
   return `
-${isModule ? "import { parentPort } from 'worker_threads'" : "const { parentPort } = require('worker_threads')"}
-const parentFunctionCaller = (${createParentFunctionCaller.toString()})(parentPort)
+${isModule ? "import { parentPort, receiveMessageOnPort, workerData } from 'worker_threads'" : "const { parentPort, receiveMessageOnPort, workerData } = require('worker_threads')"}
+const [parentFunctionSyncMessagePort, parentFunctionAsyncMessagePort, lockState] = workerData
+const createLock = ${createLock.toString()}
+const parentFunctionRequester = (${createParentFunctionRequester.toString()})(
+  parentFunctionSyncMessagePort,
+  parentFunctionAsyncMessagePort,
+  receiveMessageOnPort,
+  createLock(lockState)
+)
 
 const doWorkPromise = (async () => {
   ${Object.keys(parentFunctions)
     .map(
       (key) =>
-        `const ${key} = parentFunctionCaller.call(${JSON.stringify(key)});`
+        `const ${key} = parentFunctionRequester.call(${JSON.stringify(key)});`
     )
     .join('\n')}
   return await (${fnString})()
@@ -216,15 +350,11 @@ let doWork
 parentPort.on('message', async (args) => {
   doWork ||= await doWorkPromise
 
-  if (args.type === 'run') {
-    try {
-      const res = await doWork(...args.args)
-      parentPort.postMessage({ type: 'run', result: res })
-    } catch (e) {
-      parentPort.postMessage({ type: 'run', error: e })
-    }
-  } else if (args.type === 'parentFunction') {
-    parentFunctionCaller.receive(args.id, args)
+  try {
+    const res = await doWork(...args.args)
+    parentPort.postMessage({ result: res })
+  } catch (e) {
+    parentPort.postMessage({ error: e })
   }
 })
   `

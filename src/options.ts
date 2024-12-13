@@ -1,7 +1,7 @@
 export type ParentFunctions = Record<
   string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (...args: any[]) => Promise<any>
+  (...args: any[]) => any
 >
 
 export interface Options {
@@ -20,8 +20,6 @@ export interface Options {
    *
    * The key is the function name that can be called from the worker.
    * The value is the function itself.
-   *
-   * All functions must be async.
    */
   parentFunctions?: ParentFunctions
 }
