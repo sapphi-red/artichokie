@@ -80,7 +80,7 @@ for (const ty of ['module', 'classic'] as const) {
       expect(result).toBe(querystring.stringify({ foo: 'bar' }))
     })
 
-    test('parentFunction', async () => {
+    test('parentFunction (async)', async () => {
       const parent = async () => 1
       const worker = new Worker(
         () => async () => {
@@ -96,6 +96,85 @@ for (const ty of ['module', 'classic'] as const) {
 
       worker.stop()
       expect(result).toBe(2)
+    })
+
+    test('parentFunction (sync)', async () => {
+      const parent = () => 1
+      const worker = new Worker(
+        () => async () => {
+          return parent() + 1
+        },
+        {
+          type: ty,
+          parentFunctions: { parent }
+        }
+      )
+
+      const result = await worker.run()
+
+      worker.stop()
+      expect(result).toBe(2)
+    })
+
+    test('calling sync parentFunction while async parentFunction is pending', async () => {
+      const syncF = () => 1
+      const asyncF = async () => {
+        await new Promise((r) => setTimeout(r, 30))
+        return 2
+      }
+      const worker = new Worker(
+        () => async () => {
+          const promise = asyncF()
+          const r1 = syncF()
+          const r2 = await promise
+          return r1 + r2
+        },
+        {
+          type: ty,
+          parentFunctions: { syncF, asyncF }
+        }
+      )
+
+      const result = await worker.run()
+
+      worker.stop()
+      expect(result).toBe(3)
+    })
+
+    test('sync error in parentFunction', async () => {
+      const parent = () => {
+        throw new Error('sync error')
+      }
+      const worker = new Worker(
+        () => async () => {
+          parent()
+        },
+        {
+          type: ty,
+          parentFunctions: { parent }
+        }
+      )
+
+      await expect(() => worker.run()).rejects.toThrow('sync error')
+      worker.stop()
+    })
+
+    test('async error in parentFunction', async () => {
+      const parent = async () => {
+        throw new Error('async error')
+      }
+      const worker = new Worker(
+        () => async () => {
+          await parent()
+        },
+        {
+          type: ty,
+          parentFunctions: { parent }
+        }
+      )
+
+      await expect(() => worker.run()).rejects.toThrow('async error')
+      worker.stop()
     })
 
     test('missing parentFunction', async () => {

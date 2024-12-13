@@ -62,11 +62,29 @@ for (const ty of ['module', 'classic'] as const) {
       expect(result).toBe(querystring.stringify({ foo: 'bar' }))
     })
 
-    test('parentFunction', async () => {
+    test('parentFunction (async)', async () => {
       const parent = async () => 1
       const worker = new FakeWorker(
         () => async () => {
           return (await parent()) + 1
+        },
+        {
+          type: ty,
+          parentFunctions: { parent }
+        }
+      )
+
+      const result = await worker.run()
+
+      worker.stop()
+      expect(result).toBe(2)
+    })
+
+    test('parentFunction (sync)', async () => {
+      const parent = () => 1
+      const worker = new FakeWorker(
+        () => async () => {
+          return parent() + 1
         },
         {
           type: ty,
