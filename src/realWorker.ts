@@ -14,7 +14,7 @@ interface NodeWorker<Ret> extends _Worker {
   currentReject: ((err: Error) => void) | null
 }
 
-export class Worker<Args extends unknown[], Ret = unknown> {
+export class Worker<Args extends readonly unknown[], Ret = unknown> {
   /** @internal */
   private _isModule: boolean
   /** @internal */

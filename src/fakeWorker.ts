@@ -5,7 +5,7 @@ import { AsyncFunction, viteSsrDynamicImport, type MaybePromise } from './utils'
 const importRe = /\bimport\s*\(/
 const internalImportName = '__artichokie_local_import__'
 
-export class FakeWorker<Args extends unknown[], Ret = unknown> {
+export class FakeWorker<Args extends readonly unknown[], Ret = unknown> {
   /** @internal */
   private _fn: Promise<(...args: Args) => Promise<Ret>>
 

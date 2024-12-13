@@ -3,16 +3,19 @@ import { FakeWorker } from './fakeWorker'
 import type { Options } from './options'
 import type { MaybePromise } from './utils'
 
-type ExtendedOptions = Options & {
+type ExtendedOptions<Args extends readonly unknown[]> = Options & {
   /**
    * Whether to use a worker or to fallback to the main thread
    *
    * @default `() => false` (never fallback to the main thread)
    */
-  shouldUseFake: (...args: unknown[]) => boolean
+  shouldUseFake: (...args: Args) => boolean
 }
 
-export class WorkerWithFallback<Args extends unknown[], Ret = unknown> {
+export class WorkerWithFallback<
+  Args extends readonly unknown[],
+  Ret = unknown
+> {
   /** @internal */
   private _disableReal: boolean
   /** @internal */
@@ -24,7 +27,7 @@ export class WorkerWithFallback<Args extends unknown[], Ret = unknown> {
 
   constructor(
     fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>,
-    options: ExtendedOptions
+    options: ExtendedOptions<Args>
   ) {
     this._disableReal = options.max !== undefined && options.max <= 0
     this._realWorker = new Worker(fn, options)
