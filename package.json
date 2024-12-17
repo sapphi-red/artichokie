@@ -13,7 +13,8 @@
     "lint": "eslint --cache .",
     "format": "prettier --cache --write .",
     "type-check": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "test-e2e": "vitest -c vitest.config.e2e.ts"
   },
   "author": "sapphi-red (https://github.com/sapphi-red)",
   "contributors": [
