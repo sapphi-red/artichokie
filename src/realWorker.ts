@@ -235,6 +235,7 @@ function createParentFunctionResponder(parentFunctions: ParentFunctions) {
       parentFunctionAsyncMessagePort.postMessage({ id: args.id, error })
     }
   })
+  parentFunctionSyncMessagePort.unref()
 
   return {
     close: () => {
