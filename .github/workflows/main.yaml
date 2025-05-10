@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-repo
       - run: pnpm run build
-      - run: pnpm run test-e2e
+      - run: pnpm run test:e2e
   type-check:
     name: run type-check
     runs-on: ubuntu-latest
@@ -48,4 +48,4 @@ jobs:
       - uses: ./.github/actions/setup-repo
         with:
           node-version: ${{ matrix.node_version }}
-      - run: pnpm run test
+      - run: pnpm run test:unit
