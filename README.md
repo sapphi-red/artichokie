@@ -12,6 +12,9 @@ Mutual callable worker thread pool with fallback. Based on [okie](https://github
 - calling functions in the main thread from the worker
 - falling back to run the code in the main thread
 
+> [!NOTE]
+> The [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) is used to pass the values between the worker thread and the main thread. Some object properties may be dropped because of that. If needed, you can serialize the vaules manually before returning on the worker thread side.
+
 ## Examples
 
 ```js
@@ -54,7 +57,6 @@ const results = await Promise.all([
   worker.run(1),
   worker.run(infSymbol)
 ])
-
 console.log(results) // [0, Infinity]
 
 worker.stop()
