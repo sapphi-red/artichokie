@@ -17,6 +17,4 @@ jobs:
       - uses: ./.github/actions/setup-repo
       - run: pnpm run build
       - name: deploy
-        run: pnpm publish --no-git-checks --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm i -g npm@^11.5.2 && pnpm publish --no-git-checks
