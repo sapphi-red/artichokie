@@ -202,5 +202,27 @@ for (const ty of ['module', 'classic'] as const) {
       await expect(() => worker.run()).rejects.toThrow()
       worker.stop()
     })
+
+    test('high main thread utilization', async () => {
+      const parent = () => 1
+      const worker = new Worker(() => () => parent(), {
+        type: ty,
+        parentFunctions: { parent }
+      })
+      const resultPromise = worker.run()
+      await new Promise<void>((resolve) => {
+        queueMicrotask(() => resolve())
+      })
+
+      const now = Date.now()
+      while (Date.now() - now <= 125) {
+        // utilize main thread 250ms
+        // after 50ms: retry because no utilization information
+        // after 100ms: retry because utilization high
+        // after 150ms: should pass
+      }
+      const result = await resultPromise
+      expect(result).toBe(1)
+    })
   })
 }

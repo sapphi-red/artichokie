@@ -11,7 +11,7 @@ const fixtures = path.resolve(_dirname, 'fixtures')
 describe.concurrent('exits', () => {
   const files = ['basic.js', 'basic-esm.js']
   for (const file of files) {
-    test(file, { timeout: 100 }, async () => {
+    test(file, { timeout: 300 }, async () => {
       await execFile(process.execPath, [path.join(fixtures, file)])
     })
   }

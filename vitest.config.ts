@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     workspace: [
       {
+        define: {
+          __IS_TEST__: true
+        },
         test: {
           name: 'unit',
           include: ['src/**/*.test.ts']

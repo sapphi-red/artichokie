@@ -8,6 +8,10 @@ import {
 } from 'node:worker_threads'
 import type { Options, ParentFunctions } from './options'
 import { codeToDataUrl, viteSsrDynamicImport, type MaybePromise } from './utils'
+import type {
+  EventLoopUtilization,
+  performance as PerfHooksPerformance
+} from 'node:perf_hooks'
 
 interface NodeWorker<Ret> extends _Worker {
   currentResolve: ((value: Ret | PromiseLike<Ret>) => void) | null
@@ -38,6 +42,7 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
     this._code = genWorkerCode(
       fn,
       this._isModule,
+      __IS_TEST__ ? 50 : 5 * 1000,
       options.parentFunctions ?? {}
     )
     this._parentFunctions = options.parentFunctions ?? {}
@@ -254,17 +259,37 @@ function genWorkerCode(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   fn: () => MaybePromise<Function>,
   isModule: boolean,
+  waitTimeout: number,
   parentFunctions: ParentFunctions
 ) {
-  const createLock = (lockState: Int32Array<SharedArrayBuffer>) => {
+  const createLock = (
+    performance: typeof PerfHooksPerformance,
+    lockState: Int32Array<SharedArrayBuffer>
+  ) => {
     return {
       lock: () => {
         Atomics.store(lockState, 0, 1)
       },
       waitUnlock: () => {
-        const status = Atomics.wait(lockState, 0, 1, 10 * 1000)
-        if (status === 'timed-out') {
-          throw new Error(status)
+        let utilizationBefore: EventLoopUtilization | undefined
+        while (true) {
+          const status = Atomics.wait(lockState, 0, 1, waitTimeout)
+          if (status === 'timed-out') {
+            // retry if utilization information is not available
+            if (utilizationBefore === undefined) {
+              utilizationBefore = performance.eventLoopUtilization()
+              continue
+            }
+            // if main thread utilization is high, wait more
+            // as the main thread fails to receive the message
+            utilizationBefore =
+              performance.eventLoopUtilization(utilizationBefore)
+            if (utilizationBefore.utilization > 0.9) {
+              continue
+            }
+            throw new Error(status)
+          }
+          break
         }
       }
     }
@@ -328,13 +353,15 @@ function genWorkerCode(
 
   return `
 ${isModule ? "import { parentPort, receiveMessageOnPort, workerData } from 'worker_threads'" : "const { parentPort, receiveMessageOnPort, workerData } = require('worker_threads')"}
+${isModule ? "import { performance } from 'node:perf_hooks'" : "const { performance } = require('node:perf_hooks')"}
 const [parentFunctionSyncMessagePort, parentFunctionAsyncMessagePort, lockState] = workerData
+const waitTimeout = ${waitTimeout}
 const createLock = ${createLock.toString()}
 const parentFunctionRequester = (${createParentFunctionRequester.toString()})(
   parentFunctionSyncMessagePort,
   parentFunctionAsyncMessagePort,
   receiveMessageOnPort,
-  createLock(lockState)
+  createLock(performance, lockState)
 )
 
 const doWorkPromise = (async () => {
