@@ -16,5 +16,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-repo
       - run: pnpm run build
+      - name: Get npm tag
+        id: tag
+        run: |
+          # Check if the tag contains "beta"
+          if [[ $GITHUB_REF_NAME =~ beta ]]; then
+            echo "tag=beta" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
       - name: deploy
-        run: npm i -g npm@^11.5.2 && pnpm publish --no-git-checks
+        run: npm i -g npm@^11.5.2 && pnpm publish --tag ${{ steps.tag.outputs.tag }} --no-git-checks
