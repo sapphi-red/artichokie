@@ -2,7 +2,7 @@ import type { Options, ParentFunctions } from './options'
 import { createRequire } from 'node:module'
 import { AsyncFunction, viteSsrDynamicImport, type MaybePromise } from './utils'
 
-const importRe = /\bimport\s*\(/
+const importRe = /\bimport\s*\(/g
 const internalImportName = '__artichokie_local_import__'
 
 export class FakeWorker<Args extends readonly unknown[], Ret = unknown> {
