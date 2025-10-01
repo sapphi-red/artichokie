@@ -11,21 +11,21 @@ jobs:
     name: run lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-repo
       - run: pnpm run lint --max-warnings=0
   format:
     name: run format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-repo
       - run: pnpm prettier --check .
   build:
     name: run build and e2e tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-repo
       - run: pnpm run build
       - run: pnpm run test:e2e
@@ -33,7 +33,7 @@ jobs:
     name: run type-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-repo
       - run: pnpm run type-check
   test:
@@ -44,7 +44,7 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-repo
         with:
           node-version: ${{ matrix.node_version }}
