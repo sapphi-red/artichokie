@@ -1,6 +1,11 @@
 import type { Options, ParentFunctions } from './options'
 import { createRequire } from 'node:module'
-import { AsyncFunction, viteSsrDynamicImport, type MaybePromise } from './utils'
+import {
+  AsyncFunction,
+  stackBlitzImport,
+  viteSsrDynamicImport,
+  type MaybePromise
+} from './utils'
 
 const importRe = /\bimport\s*\(/g
 const internalImportName = '__artichokie_local_import__'
@@ -58,6 +63,8 @@ function genFakeWorkerArgsAndCode(
     // replace `import` with `__artichokie_local_import__`
     // to make the resolve base directory consistent with `require`
     .replace(importRe, `${internalImportName}(`)
+    // also replace for StackBlitz compatibility
+    .replaceAll(stackBlitzImport, internalImportName)
     // also replace `__vite_ssr_dynamic_import__` for vitest compatibility
     .replaceAll(viteSsrDynamicImport, internalImportName)
 

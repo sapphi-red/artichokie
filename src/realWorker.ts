@@ -7,7 +7,12 @@ import {
   type receiveMessageOnPort
 } from 'node:worker_threads'
 import type { Options, ParentFunctions } from './options'
-import { codeToDataUrl, viteSsrDynamicImport, type MaybePromise } from './utils'
+import {
+  codeToDataUrl,
+  stackBlitzImport,
+  viteSsrDynamicImport,
+  type MaybePromise
+} from './utils'
 import type {
   EventLoopUtilization,
   performance as PerfHooksPerformance
@@ -348,7 +353,9 @@ function genWorkerCode(
 
   const fnString = fn
     .toString()
-    // replace `__vite_ssr_dynamic_import__` for vitest compatibility
+    // replace for StackBlitz compatibility
+    .replaceAll(stackBlitzImport, 'import')
+    // also replace `__vite_ssr_dynamic_import__` for vitest compatibility
     .replaceAll(viteSsrDynamicImport, 'import')
 
   return `
