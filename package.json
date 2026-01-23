@@ -37,6 +37,10 @@
     "url": "https://github.com/sapphi-red/artichokie/issues"
   },
   "homepage": "https://github.com/sapphi-red/artichokie#readme",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/sapphi-red"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^20.19.25",
