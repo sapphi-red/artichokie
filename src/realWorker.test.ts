@@ -183,7 +183,7 @@ for (const ty of ['module', 'classic'] as const) {
       })
 
       await expect(() => worker.run()).rejects.toThrow(
-        'missing is not defined. ' + 'Maybe you forgot to pass the function to parentFunction?',
+        'missing is not defined. Maybe you forgot to pass the function to parentFunction?',
       )
       worker.stop()
     })
