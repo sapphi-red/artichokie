@@ -59,7 +59,6 @@ for (const ty of ['module', 'classic'] as const) {
       const worker = new Worker(
         ty === 'classic'
           ? () => {
-              // eslint-disable-next-line @typescript-eslint/no-require-imports
               const qs: typeof querystring = require('node:querystring')
               return async () => {
                 return qs.stringify({ foo: 'bar' })

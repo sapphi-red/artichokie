@@ -10,9 +10,8 @@
   "scripts": {
     "dev": "tsdown --watch",
     "build": "tsdown",
-    "lint": "eslint --cache .",
-    "format": "prettier --cache --write .",
-    "type-check": "tsc --noEmit",
+    "lint": "oxlint --type-aware --type-check --deny-warnings",
+    "format": "oxfmt",
     "test": "vitest",
     "test:unit": "vitest --project unit",
     "test:e2e": "vitest --project e2e"
@@ -42,15 +41,12 @@
     "url": "https://github.com/sponsors/sapphi-red"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.3",
     "@types/node": "^20.19.35",
-    "@vitest/eslint-plugin": "^1.6.9",
-    "eslint": "^9.39.3",
-    "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.8.1",
+    "oxfmt": "^0.35.0",
+    "oxlint": "^1.50.0",
+    "oxlint-tsgolint": "^0.15.0",
     "tsdown": "^0.20.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"
   },
   "packageManager": "pnpm@10.30.3"

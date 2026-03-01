@@ -239,6 +239,7 @@ function createParentFunctionResponder(parentFunctions: ParentFunctions) {
     })
 
     try {
+      // oxlint-disable-next-line typescript/await-thenable -- narrowed to thenable by runtime check above
       const result = await syncResult
       parentFunctionAsyncMessagePort.postMessage({ id: args.id, result })
     } catch (error) {
@@ -261,7 +262,6 @@ function createParentFunctionResponder(parentFunctions: ParentFunctions) {
 }
 
 function genWorkerCode(
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   fn: () => MaybePromise<Function>,
   isModule: boolean,
   waitTimeout: number,

@@ -53,7 +53,6 @@ export class FakeWorker<Args extends readonly unknown[], Ret = unknown> {
 }
 
 function genFakeWorkerArgsAndCode(
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   fn: () => MaybePromise<Function>,
   declareRequire: boolean,
   parentFunctions: ParentFunctions

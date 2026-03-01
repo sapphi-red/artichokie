@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "style": "warn"
+  },
+  "rules": {
+    "typescript/consistent-type-imports": "error",
+    "typescript/consistent-type-definitions": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "sort-keys": "off",
+    "sort-imports": "off",
+    "id-length": "off",
+    "no-magic-numbers": "off",
+    "capitalized-comments": "off",
+    "init-declarations": "off",
+    "no-implicit-coercion": "off",
+    "no-ternary": "off",
+    "no-continue": "off",
+    "no-unassigned-vars": "off",
+    "arrow-body-style": "off",
+    "max-statements": "off",
+    "max-params": "off",
+    "func-style": "off",
+    "func-names": "off",
+    "prefer-template": "off",
+    "prefer-destructuring": "off",
+    "no-shadow": "off",
+    "curly": "off",
+    "vitest/no-importing-vitest-globals": "off"
+  },
+  "ignorePatterns": ["dist/**", "tests/fixtures/**"],
+  "overrides": [
+    {
+      "files": ["src/**/*.test.ts", "tests/**/*.test.ts"],
+      "rules": {}
+    }
+  ]
+}

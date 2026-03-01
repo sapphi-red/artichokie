@@ -1,8 +1,4 @@
-export type ParentFunctions = Record<
-  string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (...args: any[]) => any
->
+export type ParentFunctions = Record<string, (...args: any[]) => any>
 
 export interface Options {
   /**
