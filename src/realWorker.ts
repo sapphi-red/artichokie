@@ -4,19 +4,11 @@ import {
   type WorkerOptions as _WorkerOptions,
   MessageChannel,
   type MessagePort,
-  type receiveMessageOnPort
+  type receiveMessageOnPort,
 } from 'node:worker_threads'
 import type { Options, ParentFunctions } from './options'
-import {
-  codeToDataUrl,
-  stackBlitzImport,
-  viteSsrDynamicImport,
-  type MaybePromise
-} from './utils'
-import type {
-  EventLoopUtilization,
-  performance as PerfHooksPerformance
-} from 'node:perf_hooks'
+import { codeToDataUrl, stackBlitzImport, viteSsrDynamicImport, type MaybePromise } from './utils'
+import type { EventLoopUtilization, performance as PerfHooksPerformance } from 'node:perf_hooks'
 
 interface NodeWorker<Ret> extends _Worker {
   currentResolve: ((value: Ret | PromiseLike<Ret>) => void) | null
@@ -39,22 +31,19 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
   /** @internal */
   private _queue: [(worker: NodeWorker<Ret>) => void, (err: Error) => void][]
 
-  constructor(
-    fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>,
-    options: Options = {}
-  ) {
+  constructor(fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>, options: Options = {}) {
     this._isModule = options.type === 'module'
     this._code = genWorkerCode(
       fn,
       this._isModule,
       __IS_TEST__ ? 50 : 5 * 1000,
-      options.parentFunctions ?? {}
+      options.parentFunctions ?? {},
     )
     this._parentFunctions = options.parentFunctions ?? {}
     const defaultMax = Math.max(
       1,
       // os.availableParallelism is available from Node.js 18.14.0
-      (os.availableParallelism?.() ?? os.cpus().length) - 1
+      (os.availableParallelism?.() ?? os.cpus().length) - 1,
     )
     this._max = options.max || defaultMax
     this._pool = []
@@ -74,9 +63,7 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
   stop(): void {
     this._pool.forEach((w) => w.unref())
     this._queue.forEach(([, reject]) =>
-      reject(
-        new Error('Main worker pool stopped before a worker was available.')
-      )
+      reject(new Error('Main worker pool stopped before a worker was available.')),
     )
     this._pool = []
     this._idlePool = []
@@ -87,28 +74,18 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
   private _createWorker(
     parentFunctionSyncMessagePort: MessagePort,
     parentFunctionAsyncMessagePort: MessagePort,
-    lockState: Int32Array<SharedArrayBuffer>
+    lockState: Int32Array<SharedArrayBuffer>,
   ): NodeWorker<Ret> {
     const options: _WorkerOptions = {
-      workerData: [
-        parentFunctionSyncMessagePort,
-        parentFunctionAsyncMessagePort,
-        lockState
-      ],
-      transferList: [
-        parentFunctionSyncMessagePort,
-        parentFunctionAsyncMessagePort
-      ]
+      workerData: [parentFunctionSyncMessagePort, parentFunctionAsyncMessagePort, lockState],
+      transferList: [parentFunctionSyncMessagePort, parentFunctionAsyncMessagePort],
     }
     if (this._isModule) {
-      return new _Worker(
-        new URL(codeToDataUrl(this._code)),
-        options
-      ) as NodeWorker<Ret>
+      return new _Worker(new URL(codeToDataUrl(this._code)), options) as NodeWorker<Ret>
     }
     return new _Worker(this._code, {
       ...options,
-      eval: true
+      eval: true,
     }) as NodeWorker<Ret>
   }
 
@@ -121,13 +98,11 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
 
     // can spawn more?
     if (this._pool.length < this._max) {
-      const parentFunctionResponder = createParentFunctionResponder(
-        this._parentFunctions
-      )
+      const parentFunctionResponder = createParentFunctionResponder(this._parentFunctions)
       const worker = this._createWorker(
         parentFunctionResponder.workerPorts.sync,
         parentFunctionResponder.workerPorts.async,
-        parentFunctionResponder.lockState
+        parentFunctionResponder.lockState,
       )
 
       worker.on('message', async (args) => {
@@ -136,8 +111,7 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
           worker.currentResolve = null
         } else {
           if (args.error instanceof ReferenceError) {
-            args.error.message +=
-              '. Maybe you forgot to pass the function to parentFunction?'
+            args.error.message += '. Maybe you forgot to pass the function to parentFunction?'
           }
           worker.currentReject?.(args.error)
           worker.currentReject = null
@@ -155,9 +129,7 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
         const i = this._pool.indexOf(worker)
         if (i > -1) this._pool.splice(i, 1)
         if (code !== 0 && worker.currentReject) {
-          worker.currentReject(
-            new Error(`Worker stopped with non-0 exit code ${code}`)
-          )
+          worker.currentReject(new Error(`Worker stopped with non-0 exit code ${code}`))
           worker.currentReject = null
           parentFunctionResponder.close()
         }
@@ -228,14 +200,14 @@ function createParentFunctionResponder(parentFunctions: ParentFunctions) {
     ) {
       syncResponse({
         id: args.id,
-        result: syncResult
+        result: syncResult,
       })
       return
     }
 
     syncResponse({
       id: args.id,
-      isAsync: true
+      isAsync: true,
     })
 
     try {
@@ -256,8 +228,8 @@ function createParentFunctionResponder(parentFunctions: ParentFunctions) {
     lockState,
     workerPorts: {
       sync: parentFunctionSyncMessageChannel.port2,
-      async: parentFunctionAsyncMessageChannel.port2
-    }
+      async: parentFunctionAsyncMessageChannel.port2,
+    },
   }
 }
 
@@ -265,11 +237,11 @@ function genWorkerCode(
   fn: () => MaybePromise<Function>,
   isModule: boolean,
   waitTimeout: number,
-  parentFunctions: ParentFunctions
+  parentFunctions: ParentFunctions,
 ) {
   const createLock = (
     performance: typeof PerfHooksPerformance,
-    lockState: Int32Array<SharedArrayBuffer>
+    lockState: Int32Array<SharedArrayBuffer>,
   ) => {
     return {
       lock: () => {
@@ -287,8 +259,7 @@ function genWorkerCode(
             }
             // if main thread utilization is high, wait more
             // as the main thread fails to receive the message
-            utilizationBefore =
-              performance.eventLoopUtilization(utilizationBefore)
+            utilizationBefore = performance.eventLoopUtilization(utilizationBefore)
             if (utilizationBefore.utilization > 0.9) {
               continue
             }
@@ -296,7 +267,7 @@ function genWorkerCode(
           }
           break
         }
-      }
+      },
     }
   }
 
@@ -304,7 +275,7 @@ function genWorkerCode(
     syncPort: MessagePort,
     asyncPort: MessagePort,
     receive: typeof receiveMessageOnPort,
-    lock: ReturnType<typeof createLock>
+    lock: ReturnType<typeof createLock>,
   ) => {
     let id = 0
     const resolvers = new Map()
@@ -373,10 +344,7 @@ const parentFunctionRequester = (${createParentFunctionRequester.toString()})(
 
 const doWorkPromise = (async () => {
   ${Object.keys(parentFunctions)
-    .map(
-      (key) =>
-        `const ${key} = parentFunctionRequester.call(${JSON.stringify(key)});`
-    )
+    .map((key) => `const ${key} = parentFunctionRequester.call(${JSON.stringify(key)});`)
     .join('\n')}
   return await (${fnString})()
 })()

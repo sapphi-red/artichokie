@@ -7,6 +7,6 @@ export default defineConfig({
   format: 'esm',
   fixedExtension: false,
   define: {
-    __IS_TEST__: 'false'
-  }
+    __IS_TEST__: 'false',
+  },
 })

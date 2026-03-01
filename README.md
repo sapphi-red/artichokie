@@ -25,8 +25,8 @@ const worker = new Worker(
     return (await parent()) + syncParent() + 1
   },
   {
-    parentFunctions: { parent, syncParent }
-  }
+    parentFunctions: { parent, syncParent },
+  },
 )
 
 const result = await worker.run()

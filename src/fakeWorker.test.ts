@@ -13,12 +13,12 @@ for (const ty of ['module', 'classic'] as const) {
                 () => {
                   r(n + 1)
                 },
-                Math.floor(Math.random() * 100)
+                Math.floor(Math.random() * 100),
               )
             })
           }
         },
-        { type: ty }
+        { type: ty },
       )
 
       const results = await Promise.all([
@@ -30,7 +30,7 @@ for (const ty of ['module', 'classic'] as const) {
         worker.run({ n: 6 }),
         worker.run({ n: 7 }),
         worker.run({ n: 8 }),
-        worker.run({ n: 9 })
+        worker.run({ n: 9 }),
       ])
 
       worker.stop()
@@ -52,7 +52,7 @@ for (const ty of ['module', 'classic'] as const) {
                 return qs.stringify({ foo: 'bar' })
               }
             },
-        { type: ty }
+        { type: ty },
       )
 
       const result = await worker.run()
@@ -69,8 +69,8 @@ for (const ty of ['module', 'classic'] as const) {
         },
         {
           type: ty,
-          parentFunctions: { parent }
-        }
+          parentFunctions: { parent },
+        },
       )
 
       const result = await worker.run()
@@ -87,8 +87,8 @@ for (const ty of ['module', 'classic'] as const) {
         },
         {
           type: ty,
-          parentFunctions: { parent }
-        }
+          parentFunctions: { parent },
+        },
       )
 
       const result = await worker.run()
@@ -103,12 +103,11 @@ for (const ty of ['module', 'classic'] as const) {
         () => async () => {
           return (await missing()) + 1
         },
-        { type: ty }
+        { type: ty },
       )
 
       await expect(() => worker.run()).rejects.toThrow(
-        'missing is not defined. ' +
-          'Maybe you forgot to pass the function to parentFunction?'
+        'missing is not defined. ' + 'Maybe you forgot to pass the function to parentFunction?',
       )
       worker.stop()
     })

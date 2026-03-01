@@ -16,8 +16,8 @@ for (const ty of ['module', 'classic'] as const) {
           parentFunctions: { isInf },
           shouldUseFake(n) {
             return typeof n === 'symbol'
-          }
-        }
+          },
+        },
       )
 
       const results = await Promise.all([worker.run(1), worker.run(infSymbol)])
@@ -39,8 +39,8 @@ for (const ty of ['module', 'classic'] as const) {
           parentFunctions: { isInf },
           shouldUseFake() {
             return false
-          }
-        }
+          },
+        },
       )
 
       await expect(() => worker.run(infSymbol)).rejects.toThrow()
@@ -61,8 +61,8 @@ for (const ty of ['module', 'classic'] as const) {
           shouldUseFake() {
             return false
           },
-          max: 0
-        }
+          max: 0,
+        },
       )
 
       const result = await worker.run(infSymbol)

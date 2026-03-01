@@ -2,11 +2,32 @@
   "name": "artichokie",
   "version": "0.4.2",
   "description": "Mutual callable worker thread pool with fallback.",
-  "type": "module",
-  "exports": "./dist/index.js",
+  "keywords": [
+    "thread pool",
+    "worker threads"
+  ],
+  "homepage": "https://github.com/sapphi-red/artichokie#readme",
+  "bugs": {
+    "url": "https://github.com/sapphi-red/artichokie/issues"
+  },
+  "license": "MIT",
+  "author": "sapphi-red (https://github.com/sapphi-red)",
+  "contributors": [
+    "Evan You"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sapphi-red/artichokie.git"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/sapphi-red"
+  },
   "files": [
     "dist"
   ],
+  "type": "module",
+  "exports": "./dist/index.js",
   "scripts": {
     "dev": "tsdown --watch",
     "build": "tsdown",
@@ -16,30 +37,6 @@
     "test:unit": "vitest --project unit",
     "test:e2e": "vitest --project e2e"
   },
-  "author": "sapphi-red (https://github.com/sapphi-red)",
-  "contributors": [
-    "Evan You"
-  ],
-  "license": "MIT",
-  "engines": {
-    "node": "^18.0.0 || >=20.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sapphi-red/artichokie.git"
-  },
-  "keywords": [
-    "worker threads",
-    "thread pool"
-  ],
-  "bugs": {
-    "url": "https://github.com/sapphi-red/artichokie/issues"
-  },
-  "homepage": "https://github.com/sapphi-red/artichokie#readme",
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/sapphi-red"
-  },
   "devDependencies": {
     "@types/node": "^20.19.35",
     "oxfmt": "^0.35.0",
@@ -48,6 +45,9 @@
     "tsdown": "^0.20.3",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": "^18.0.0 || >=20.0.0"
   },
   "packageManager": "pnpm@10.30.3"
 }

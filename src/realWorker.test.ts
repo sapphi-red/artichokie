@@ -13,12 +13,12 @@ for (const ty of ['module', 'classic'] as const) {
                 () => {
                   r(n + 1)
                 },
-                Math.floor(Math.random() * 100)
+                Math.floor(Math.random() * 100),
               )
             })
           }
         },
-        { type: ty }
+        { type: ty },
       )
 
       const results = await Promise.all([
@@ -30,7 +30,7 @@ for (const ty of ['module', 'classic'] as const) {
         worker.run({ n: 6 }),
         worker.run({ n: 7 }),
         worker.run({ n: 8 }),
-        worker.run({ n: 9 })
+        worker.run({ n: 9 }),
       ])
 
       worker.stop()
@@ -43,7 +43,7 @@ for (const ty of ['module', 'classic'] as const) {
           await new Promise((resolve) => setTimeout(resolve, 50))
           return 1
         },
-        { max: 1, type: ty }
+        { max: 1, type: ty },
       )
 
       const start = Date.now()
@@ -70,7 +70,7 @@ for (const ty of ['module', 'classic'] as const) {
                 return qs.stringify({ foo: 'bar' })
               }
             },
-        { type: ty }
+        { type: ty },
       )
 
       const result = await worker.run()
@@ -87,8 +87,8 @@ for (const ty of ['module', 'classic'] as const) {
         },
         {
           type: ty,
-          parentFunctions: { parent }
-        }
+          parentFunctions: { parent },
+        },
       )
 
       const result = await worker.run()
@@ -105,8 +105,8 @@ for (const ty of ['module', 'classic'] as const) {
         },
         {
           type: ty,
-          parentFunctions: { parent }
-        }
+          parentFunctions: { parent },
+        },
       )
 
       const result = await worker.run()
@@ -130,8 +130,8 @@ for (const ty of ['module', 'classic'] as const) {
         },
         {
           type: ty,
-          parentFunctions: { syncF, asyncF }
-        }
+          parentFunctions: { syncF, asyncF },
+        },
       )
 
       const result = await worker.run()
@@ -150,8 +150,8 @@ for (const ty of ['module', 'classic'] as const) {
         },
         {
           type: ty,
-          parentFunctions: { parent }
-        }
+          parentFunctions: { parent },
+        },
       )
 
       await expect(() => worker.run()).rejects.toThrow('sync error')
@@ -168,8 +168,8 @@ for (const ty of ['module', 'classic'] as const) {
         },
         {
           type: ty,
-          parentFunctions: { parent }
-        }
+          parentFunctions: { parent },
+        },
       )
 
       await expect(() => worker.run()).rejects.toThrow('async error')
@@ -183,8 +183,7 @@ for (const ty of ['module', 'classic'] as const) {
       })
 
       await expect(() => worker.run()).rejects.toThrow(
-        'missing is not defined. ' +
-          'Maybe you forgot to pass the function to parentFunction?'
+        'missing is not defined. ' + 'Maybe you forgot to pass the function to parentFunction?',
       )
       worker.stop()
     })
@@ -194,7 +193,7 @@ for (const ty of ['module', 'classic'] as const) {
         () => async () => {
           throw new Error('throw')
         },
-        { max: 1, type: ty }
+        { max: 1, type: ty },
       )
 
       await expect(() => worker.run()).rejects.toThrow()
@@ -206,7 +205,7 @@ for (const ty of ['module', 'classic'] as const) {
       const parent = () => 1
       const worker = new Worker(() => () => parent(), {
         type: ty,
-        parentFunctions: { parent }
+        parentFunctions: { parent },
       })
       const resultPromise = worker.run()
       await new Promise<void>((resolve) => {

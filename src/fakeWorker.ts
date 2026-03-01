@@ -1,11 +1,6 @@
 import type { Options, ParentFunctions } from './options'
 import { createRequire } from 'node:module'
-import {
-  AsyncFunction,
-  stackBlitzImport,
-  viteSsrDynamicImport,
-  type MaybePromise
-} from './utils'
+import { AsyncFunction, stackBlitzImport, viteSsrDynamicImport, type MaybePromise } from './utils'
 
 const importRe = /\bimport\s*\(/g
 const internalImportName = '__artichokie_local_import__'
@@ -14,21 +9,14 @@ export class FakeWorker<Args extends readonly unknown[], Ret = unknown> {
   /** @internal */
   private _fn: Promise<(...args: Args) => Promise<Ret>>
 
-  constructor(
-    fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>,
-    options: Options = {}
-  ) {
+  constructor(fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>, options: Options = {}) {
     const declareRequire = options.type !== 'module'
-    const argsAndCode = genFakeWorkerArgsAndCode(
-      fn,
-      declareRequire,
-      options.parentFunctions ?? {}
-    )
+    const argsAndCode = genFakeWorkerArgsAndCode(fn, declareRequire, options.parentFunctions ?? {})
     const localImport = (specifier: string) => import(specifier)
     const args = [
       ...(declareRequire ? [createRequire(import.meta.url)] : []),
       localImport,
-      options.parentFunctions
+      options.parentFunctions,
     ]
     this._fn = new AsyncFunction(...argsAndCode)(...args)
   }
@@ -40,8 +28,7 @@ export class FakeWorker<Args extends readonly unknown[], Ret = unknown> {
       )(...args)
     } catch (err) {
       if (err instanceof ReferenceError) {
-        err.message +=
-          '. Maybe you forgot to pass the function to parentFunction?'
+        err.message += '. Maybe you forgot to pass the function to parentFunction?'
       }
       throw err
     }
@@ -55,7 +42,7 @@ export class FakeWorker<Args extends readonly unknown[], Ret = unknown> {
 function genFakeWorkerArgsAndCode(
   fn: () => MaybePromise<Function>,
   declareRequire: boolean,
-  parentFunctions: ParentFunctions
+  parentFunctions: ParentFunctions,
 ) {
   const fnString = fn
     .toString()
@@ -76,6 +63,6 @@ ${Object.keys(parentFunctions)
   .map((key) => `const ${key} = parentFunctions[${JSON.stringify(key)}];`)
   .join('\n')}
 return await (${fnString})()
-  `
+  `,
   ]
 }
