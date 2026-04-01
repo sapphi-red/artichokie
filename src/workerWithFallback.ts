@@ -14,13 +14,13 @@ type ExtendedOptions<Args extends readonly unknown[]> = Options & {
 
 export class WorkerWithFallback<Args extends readonly unknown[], Ret = unknown> {
   /** @internal */
-  private _disableReal: boolean
+  private readonly _disableReal: boolean
   /** @internal */
-  private _realWorker: Worker<Args, Ret>
+  private readonly _realWorker: Worker<Args, Ret>
   /** @internal */
-  private _fakeWorker: FakeWorker<Args, Ret>
+  private readonly _fakeWorker: FakeWorker<Args, Ret>
   /** @internal */
-  private _shouldUseFake: (...args: Args) => boolean
+  private readonly _shouldUseFake: (...args: Args) => boolean
 
   constructor(
     fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>,

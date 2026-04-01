@@ -17,13 +17,13 @@ interface NodeWorker<Ret> extends _Worker {
 
 export class Worker<Args extends readonly unknown[], Ret = unknown> {
   /** @internal */
-  private _isModule: boolean
+  private readonly _isModule: boolean
   /** @internal */
-  private _code: string
+  private readonly _code: string
   /** @internal */
-  private _parentFunctions: ParentFunctions
+  private readonly _parentFunctions: ParentFunctions
   /** @internal */
-  private _max: number
+  private readonly _max: number
   /** @internal */
   private _pool: NodeWorker<Ret>[]
   /** @internal */

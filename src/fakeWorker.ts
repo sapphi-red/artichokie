@@ -7,7 +7,7 @@ const internalImportName = '__artichokie_local_import__'
 
 export class FakeWorker<Args extends readonly unknown[], Ret = unknown> {
   /** @internal */
-  private _fn: Promise<(...args: Args) => Promise<Ret>>
+  private readonly _fn: Promise<(...args: Args) => Promise<Ret>>
 
   constructor(fn: () => MaybePromise<(...args: Args) => MaybePromise<Ret>>, options: Options = {}) {
     const declareRequire = options.type !== 'module'
