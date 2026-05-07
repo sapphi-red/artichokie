@@ -43,7 +43,7 @@ for (const ty of ['module', 'classic'] as const) {
         },
       )
 
-      await expect(() => worker.run(infSymbol)).rejects.toThrow("Symbol(inf) could not be cloned.")
+      await expect(() => worker.run(infSymbol)).rejects.toThrow('Symbol(inf) could not be cloned.')
       worker.stop()
     })
 
