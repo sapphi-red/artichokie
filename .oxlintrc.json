@@ -29,7 +29,11 @@
     "prefer-destructuring": "off",
     "no-shadow": "off",
     "curly": "off",
-    "vitest/no-importing-vitest-globals": "off"
+    "no-underscore-dangle": "off",
+    "vitest/consistent-test-it": ["warn", { "fn": "test" }],
+    "vitest/no-importing-vitest-globals": "off",
+    "vitest/prefer-each": "off",
+    "vitest/prefer-expect-assertions": "off",
   },
   "ignorePatterns": ["dist/**", "tests/fixtures/**"],
   "overrides": [

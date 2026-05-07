@@ -11,6 +11,7 @@ const fixtures = path.resolve(_dirname, 'fixtures')
 describe.concurrent('exits', () => {
   const files = ['basic.js', 'basic-esm.js']
   for (const file of files) {
+    // oxlint-disable-next-line valid-title,expect-expect
     test(file, { timeout: 300 }, async () => {
       await execFile(process.execPath, [path.join(fixtures, file)])
     })
