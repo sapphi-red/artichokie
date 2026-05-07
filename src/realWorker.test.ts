@@ -196,8 +196,8 @@ for (const ty of ['module', 'classic'] as const) {
         { max: 1, type: ty },
       )
 
-      await expect(() => worker.run()).rejects.toThrow()
-      await expect(() => worker.run()).rejects.toThrow()
+      await expect(() => worker.run()).rejects.toThrow('throw')
+      await expect(() => worker.run()).rejects.toThrow('throw')
       worker.stop()
     })
 
