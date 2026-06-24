@@ -287,7 +287,19 @@ function genWorkerCode(
         lock.lock()
         syncPort.postMessage({ id, name: key, args })
         lock.waitUnlock()
-        const resArgs = receive(syncPort)!.message
+        // `receive` may return `undefined` even after `waitUnlock()` due to a
+        // race condition where the message hasn't arrived yet.
+        // Retry in a busy loop as a workaround.
+        // https://github.com/sapphi-red/artichokie/issues/59
+        let received: ReturnType<typeof receive>
+        for (let i = 0; i < 10; i++) {
+          received = receive(syncPort)
+          if (received !== undefined) break
+        }
+        if (received === undefined) {
+          throw new Error('Failed to receive message from sync port after 10 attempts')
+        }
+        const resArgs = received.message
 
         if (resArgs.isAsync) {
           let resolve, reject
