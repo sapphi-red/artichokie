@@ -287,7 +287,15 @@ function genWorkerCode(
         lock.lock()
         syncPort.postMessage({ id, name: key, args })
         lock.waitUnlock()
-        const resArgs = receive(syncPort)!.message
+        let received: ReturnType<typeof receive>
+        for (let i = 0; i < 10; i++) {
+          received = receive(syncPort)
+          if (received !== undefined) break
+        }
+        if (received === undefined) {
+          throw new Error('Failed to receive message from sync port after 10 attempts')
+        }
+        const resArgs = received.message
 
         if (resArgs.isAsync) {
           let resolve, reject
