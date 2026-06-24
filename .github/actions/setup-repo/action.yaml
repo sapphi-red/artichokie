@@ -10,6 +10,9 @@ runs:
   using: composite
   steps:
     - uses: pnpm/action-setup@26f6d4f2c533a43e6b5da0b4a5dd983f98f7b49a # v6
+      with:
+        # Use @pnpm/exe so `pnpm` runs independently of the matrix Node version
+        standalone: true
     - name: setup Node
       uses: actions/setup-node@v6
       with:
