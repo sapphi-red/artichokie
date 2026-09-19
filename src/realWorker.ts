@@ -56,7 +56,14 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
     return new Promise<Ret>((resolve, reject) => {
       worker.currentResolve = resolve
       worker.currentReject = reject
-      worker.postMessage({ args })
+      try {
+        worker.postMessage({ args })
+      } catch (err) {
+        worker.currentResolve = null
+        worker.currentReject = null
+        this._assignDoneWorker(worker)
+        throw err
+      }
     })
   }
 

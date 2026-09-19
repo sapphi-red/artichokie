@@ -201,6 +201,19 @@ for (const ty of ['module', 'classic'] as const) {
       worker.stop()
     })
 
+    test('returns worker to pool when arguments cannot be cloned', { timeout: 300 }, async () => {
+      const worker = new Worker(() => async (value: unknown) => value, {
+        max: 1,
+        type: ty,
+      })
+
+      await expect(() => worker.run(Symbol('uncloneable'))).rejects.toThrow(
+        'could not be cloned',
+      )
+      await expect(worker.run('works')).resolves.toBe('works')
+      worker.stop()
+    })
+
     test('high main thread utilization', async () => {
       const parent = () => 1
       const worker = new Worker(() => () => parent(), {
