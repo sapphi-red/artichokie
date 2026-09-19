@@ -28,6 +28,7 @@
     "prefer-template": "off",
     "prefer-destructuring": "off",
     "no-shadow": "off",
+    "one-var": "off",
     "curly": "off",
     "no-underscore-dangle": "off",
     "vitest/consistent-test-it": ["warn", { "fn": "test" }],
