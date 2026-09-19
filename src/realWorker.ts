@@ -126,19 +126,25 @@ export class Worker<Args extends readonly unknown[], Ret = unknown> {
         this._assignDoneWorker(worker)
       })
 
-      worker.on('error', (err) => {
+      const rejectWorker = (err: Error) => {
         worker.currentReject?.(err)
         worker.currentReject = null
         parentFunctionResponder.close()
-      })
+      }
+
+      worker.on('error', rejectWorker)
 
       worker.on('exit', (code) => {
         const i = this._pool.indexOf(worker)
         if (i > -1) this._pool.splice(i, 1)
-        if (code !== 0 && worker.currentReject) {
-          worker.currentReject(new Error(`Worker stopped with non-0 exit code ${code}`))
-          worker.currentReject = null
-          parentFunctionResponder.close()
+        const idleIndex = this._idlePool.indexOf(worker)
+        if (idleIndex > -1) this._idlePool.splice(idleIndex, 1)
+        if (code !== 0) {
+          rejectWorker(new Error(`Worker stopped with non-0 exit code ${code}`))
+          if (this._queue.length) {
+            const [resolve, reject] = this._queue.shift()!
+            this._getAvailableWorker().then(resolve, reject)
+          }
         }
       })
 

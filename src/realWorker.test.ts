@@ -55,6 +55,62 @@ for (const ty of ['module', 'classic'] as const) {
       expect(elapsed).toBeGreaterThan(75)
     })
 
+    test('respawns a worker to drain queued jobs after a worker failure', { timeout: 300 }, async () => {
+      let failFirstWorker = true
+      const shouldFail = () => {
+        const result = failFirstWorker
+        failFirstWorker = false
+        return result
+      }
+      const worker = new Worker(
+        () => {
+          if (shouldFail()) throw new Error('worker failed')
+          return async () => 1
+        },
+        {
+          max: 1,
+          type: ty,
+          parentFunctions: {
+            shouldFail,
+          },
+        },
+      )
+
+      const active = worker.run()
+      const queued = worker.run()
+
+      await expect(active).rejects.toThrow('worker failed')
+      await expect(queued).resolves.toBe(1)
+      worker.stop()
+    })
+
+    test('does not reuse a worker that exits while idle', { timeout: 300 }, async () => {
+      let exitFirstWorker = true
+      const shouldExit = () => {
+        const result = exitFirstWorker
+        exitFirstWorker = false
+        return result
+      }
+      const worker = new Worker(
+        () => async () => {
+          if (shouldExit()) setTimeout(() => process.exit(1), 25)
+          return 1
+        },
+        {
+          max: 1,
+          type: ty,
+          parentFunctions: {
+            shouldExit,
+          },
+        },
+      )
+
+      await expect(worker.run()).resolves.toBe(1)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      await expect(worker.run()).resolves.toBe(1)
+      worker.stop()
+    })
+
     test('require works', async () => {
       const worker = new Worker(
         ty === 'classic'
