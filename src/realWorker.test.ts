@@ -55,34 +55,38 @@ for (const ty of ['module', 'classic'] as const) {
       expect(elapsed).toBeGreaterThan(75)
     })
 
-    test('respawns a worker to drain queued jobs after a worker failure', { timeout: 300 }, async () => {
-      let failFirstWorker = true
-      const shouldFail = () => {
-        const result = failFirstWorker
-        failFirstWorker = false
-        return result
-      }
-      const worker = new Worker(
-        () => {
-          if (shouldFail()) throw new Error('worker failed')
-          return async () => 1
-        },
-        {
-          max: 1,
-          type: ty,
-          parentFunctions: {
-            shouldFail,
+    test(
+      'respawns a worker to drain queued jobs after a worker failure',
+      { timeout: 300 },
+      async () => {
+        let failFirstWorker = true
+        const shouldFail = () => {
+          const result = failFirstWorker
+          failFirstWorker = false
+          return result
+        }
+        const worker = new Worker(
+          () => {
+            if (shouldFail()) throw new Error('worker failed')
+            return async () => 1
           },
-        },
-      )
+          {
+            max: 1,
+            type: ty,
+            parentFunctions: {
+              shouldFail,
+            },
+          },
+        )
 
-      const active = worker.run()
-      const queued = worker.run()
+        const active = worker.run()
+        const queued = worker.run()
 
-      await expect(active).rejects.toThrow('worker failed')
-      await expect(queued).resolves.toBe(1)
-      worker.stop()
-    })
+        await expect(active).rejects.toThrow('worker failed')
+        await expect(queued).resolves.toBe(1)
+        worker.stop()
+      },
+    )
 
     test('does not reuse a worker that exits while idle', { timeout: 300 }, async () => {
       let exitFirstWorker = true
@@ -263,9 +267,7 @@ for (const ty of ['module', 'classic'] as const) {
         type: ty,
       })
 
-      await expect(() => worker.run(Symbol('uncloneable'))).rejects.toThrow(
-        'could not be cloned',
-      )
+      await expect(() => worker.run(Symbol('uncloneable'))).rejects.toThrow('could not be cloned')
       await expect(worker.run('works')).resolves.toBe('works')
       worker.stop()
     })
