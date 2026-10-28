@@ -180,12 +180,6 @@ function createParentFunctionResponder(parentFunctions: ParentFunctions) {
   const lockState = new Int32Array(new SharedArrayBuffer(4))
   const unlock = () => {
     Atomics.store(lockState, 0, 0)
-    // TEMPORARY REPRODUCER ONLY: this entire delay block is removed in commit 3.
-    // It only exists to demonstrate the failure and confirm the fix.
-    const beforeNotify = Date.now() + Number(process.env.ARTICHOKIE_TEST_BEFORE_NOTIFY_MS || 0)
-    while (Date.now() < beforeNotify) {
-      // Temporary busy wait: widen the gap between marking ready and notifying.
-    }
     Atomics.notify(lockState, 0)
   }
 
@@ -308,12 +302,6 @@ function genWorkerCode(
 
         lock.lock()
         syncPort.postMessage({ id, name: key, args })
-        // TEMPORARY REPRODUCER ONLY: this entire delay block is removed in commit 3.
-        // It only exists to demonstrate the failure and confirm the fix.
-        const beforeWait = Date.now() + Number(process.env.ARTICHOKIE_TEST_BEFORE_WAIT_MS || 0)
-        while (Date.now() < beforeWait) {
-          // Temporary busy wait: let the first response arrive before waiting.
-        }
         lock.waitUnlock()
         // `receive` may return `undefined` even after `waitUnlock()` due to a
         // race condition where the message hasn't arrived yet.
