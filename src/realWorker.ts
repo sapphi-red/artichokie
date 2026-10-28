@@ -278,6 +278,9 @@ function genWorkerCode(
             }
             throw new Error(status)
           }
+          // A notify from an earlier call can wake this wait. Keep waiting for
+          // the current response if it has not been marked ready yet.
+          if (Atomics.load(lockState, 0) === 1) continue
           break
         }
       },
